@@ -1,9 +1,9 @@
+import ClientOnlyCanvas from "@/components/ClientOnlyCanvas";
+
 export default function Home() {
   return (
-    <>
-      <div>
-        <h1>PostIt - Board APP</h1>
-      </div>
-    </>
+    <div className="h-screen">
+      <ClientOnlyCanvas />
+    </div>
   );
 }
