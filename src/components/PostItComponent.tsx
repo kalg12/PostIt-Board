@@ -27,13 +27,112 @@ interface PostItComponentProps {
   onMove: (newPos: { x: number; y: number }) => void;
   onUpdate: (updates: Partial<Post>) => void;
   onDelete: () => void;
+  allPosts?: Post[];
 }
+
+// Función para detectar colisiones
+const checkCollision = (
+  rect1: { x: number; y: number; width: number; height: number },
+  rect2: { x: number; y: number; width: number; height: number },
+  margin: number = 10
+) => {
+  return !(
+    rect1.x + rect1.width + margin < rect2.x ||
+    rect2.x + rect2.width + margin < rect1.x ||
+    rect1.y + rect1.height + margin < rect2.y ||
+    rect2.y + rect2.height + margin < rect1.y
+  );
+};
+
+// Función para encontrar una posición libre con animación suave
+const findFreePositionSmooth = (
+  currentPost: Post,
+  allPosts: Post[],
+  targetX: number,
+  targetY: number,
+  postWidth: number = 200,
+  postHeight: number = 150
+) => {
+  const margin = 20; // Margen más generoso para separación
+  const maxRadius = 250;
+  const step = 25;
+
+  // Primero intentar la posición objetivo
+  const targetRect = {
+    x: targetX,
+    y: targetY,
+    width: postWidth,
+    height: postHeight,
+  };
+  let hasCollision = false;
+
+  for (const post of allPosts) {
+    if (post.id === currentPost.id) continue;
+    const postRect = {
+      x: post.x,
+      y: post.y,
+      width: postWidth,
+      height: postHeight,
+    };
+    if (checkCollision(targetRect, postRect, margin)) {
+      hasCollision = true;
+      break;
+    }
+  }
+
+  if (!hasCollision) {
+    return { x: targetX, y: targetY };
+  }
+
+  // Buscar posiciones en un patrón más natural (menos agresivo)
+  const directions = [
+    { dx: 1, dy: 0 }, // derecha
+    { dx: 0, dy: 1 }, // abajo
+    { dx: -1, dy: 0 }, // izquierda
+    { dx: 0, dy: -1 }, // arriba
+    { dx: 1, dy: 1 }, // diagonal abajo-derecha
+    { dx: -1, dy: 1 }, // diagonal abajo-izquierda
+    { dx: 1, dy: -1 }, // diagonal arriba-derecha
+    { dx: -1, dy: -1 }, // diagonal arriba-izquierda
+  ];
+
+  for (let distance = step; distance <= maxRadius; distance += step) {
+    for (const direction of directions) {
+      const x = targetX + direction.dx * distance;
+      const y = targetY + direction.dy * distance;
+      const testRect = { x, y, width: postWidth, height: postHeight };
+
+      let collision = false;
+      for (const post of allPosts) {
+        if (post.id === currentPost.id) continue;
+        const postRect = {
+          x: post.x,
+          y: post.y,
+          width: postWidth,
+          height: postHeight,
+        };
+        if (checkCollision(testRect, postRect, margin)) {
+          collision = true;
+          break;
+        }
+      }
+
+      if (!collision) {
+        return { x, y };
+      }
+    }
+  }
+
+  // Si no se encuentra posición libre, usar la original
+  return { x: targetX, y: targetY };
+};
 
 export default function PostItComponent({
   post,
   onMove,
   onUpdate,
   onDelete,
+  allPosts = [],
 }: PostItComponentProps) {
   const { user } = useAuthStore();
   const [isDragging, setIsDragging] = useState(false);
@@ -47,16 +146,52 @@ export default function PostItComponent({
 
   const handleDragStart = () => {
     setIsDragging(true);
+
+    // Si no puede editar, mostrar feedback visual temporal
+    if (!canEdit) {
+      // Agregar un pequeño shake effect para indicar que no se puede mover
+      setTimeout(() => {
+        // El post-it volverá a su posición original en handleDragEnd
+      }, 100);
+    }
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     setIsDragging(false);
-    if (canEdit) {
-      const newPos = {
-        x: e.target.x(),
-        y: e.target.y(),
-      };
-      onMove(newPos);
+
+    if (!canEdit) {
+      // Si no puede editar, regresar a la posición original
+      e.target.x(post.x);
+      e.target.y(post.y);
+      return;
+    }
+
+    const newX = e.target.x();
+    const newY = e.target.y();
+
+    // Encontrar posición libre si hay otros posts
+    if (allPosts.length > 0) {
+      const freePosition = findFreePositionSmooth(
+        post,
+        allPosts,
+        newX,
+        newY,
+        width,
+        height
+      );
+
+      // Actualizar posición del nodo si es diferente (animación suave a posición libre)
+      if (freePosition.x !== newX || freePosition.y !== newY) {
+        e.target.to({
+          x: freePosition.x,
+          y: freePosition.y,
+          duration: 0.3,
+        });
+      }
+
+      onMove(freePosition);
+    } else {
+      onMove({ x: newX, y: newY });
     }
   };
 
@@ -238,7 +373,7 @@ export default function PostItComponent({
     <Group
       x={post.x}
       y={post.y}
-      draggable={canEdit}
+      draggable={true} // Permitir arrastre para todos los post-its
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDblClick={handleDoubleClick}
@@ -247,14 +382,17 @@ export default function PostItComponent({
       shadowBlur={isDragging ? 10 : 5}
       shadowOffset={{ x: isDragging ? 5 : 3, y: isDragging ? 5 : 3 }}
       shadowOpacity={0.3}
+      opacity={isDragging ? 0.8 : 1}
+      scaleX={isDragging ? 1.05 : 1}
+      scaleY={isDragging ? 1.05 : 1}
     >
       {/* Fondo del post-it */}
       <Rect
         width={width}
         height={height}
         fill={post.color}
-        stroke="#ddd"
-        strokeWidth={1}
+        stroke={isDragging ? (canEdit ? "#22c55e" : "#ef4444") : "#ddd"}
+        strokeWidth={isDragging ? 2 : 1}
         cornerRadius={5}
       />
 
