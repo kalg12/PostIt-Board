@@ -10,7 +10,6 @@ import { Plus } from "lucide-react";
 import PostItForm from "./PostItForm";
 import {
   findFreePosition,
-  adjustPositionToAvoidCollision,
 } from "@/lib/canvas-utils";
 
 interface Post {
@@ -210,14 +209,8 @@ export default function CanvasBoard() {
     newPos: { x: number; y: number }
   ) => {
     try {
-      // Ajustar posición para evitar colisiones
-      const adjustedPos = adjustPositionToAvoidCollision(
-        newPos,
-        postId,
-        posts,
-        200,
-        150
-      );
+      // Actualizar localmente primero para mejor UX
+      updatePost(postId, newPos);
 
       const response = await fetch("/api/posts", {
         method: "PUT",
@@ -227,15 +220,19 @@ export default function CanvasBoard() {
         },
         body: JSON.stringify({
           id: postId,
-          x: adjustedPos.x,
-          y: adjustedPos.y,
+          x: newPos.x,
+          y: newPos.y,
         }),
       });
 
-      if (response.ok) {
-        updatePost(postId, newPos);
+      if (!response.ok) {
+        // Si falla, recargar posts para revertir el cambio
+        await fetchPosts();
+        console.error("Error al mover post");
       }
     } catch (error) {
+      // Si falla, recargar posts para revertir el cambio
+      await fetchPosts();
       console.error("Error al mover post:", error);
     }
   };
@@ -330,6 +327,7 @@ export default function CanvasBoard() {
             <PostItComponent
               key={post.id}
               post={post}
+              allPosts={posts}
               onMove={(newPos: { x: number; y: number }) =>
                 handlePostMove(post.id, newPos)
               }
