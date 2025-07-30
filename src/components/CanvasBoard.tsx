@@ -8,9 +8,7 @@ import Minimap from "./Minimap";
 import { usePostStore, useAuthStore } from "@/store/useStore";
 import { Plus } from "lucide-react";
 import PostItForm from "./PostItForm";
-import {
-  findFreePosition,
-} from "@/lib/canvas-utils";
+import { findFreePosition } from "@/lib/canvas-utils";
 
 interface Post {
   id: string;

@@ -67,7 +67,7 @@ async function main() {
   const postWidth = 200;
   const postHeight = 150;
   const margin = 30; // Margen entre posts
-  
+
   const posts = await Promise.all([
     // Primera fila
     prisma.post.create({
@@ -97,11 +97,12 @@ async function main() {
         authorId: users[2].id,
       },
     }),
-    
+
     // Segunda fila - Posts con URLs
     prisma.post.create({
       data: {
-        content: "📄 Revisar documentación importante:\nhttps://docs.google.com/document/d/abc123\nAntes del proyecto final",
+        content:
+          "📄 Revisar documentación importante:\nhttps://docs.google.com/document/d/abc123\nAntes del proyecto final",
         x: 50,
         y: 50 + postHeight + margin, // 230
         color: "#34D399", // Verde
@@ -110,7 +111,8 @@ async function main() {
     }),
     prisma.post.create({
       data: {
-        content: "🎥 Tutorial muy útil:\nwww.youtube.com/watch?v=tutorial123\n\n💻 También revisar:\ngithub.com/usuario/proyecto-ejemplo",
+        content:
+          "🎥 Tutorial muy útil:\nwww.youtube.com/watch?v=tutorial123\n\n💻 También revisar:\ngithub.com/usuario/proyecto-ejemplo",
         x: 50 + postWidth + margin, // 280
         y: 50 + postHeight + margin, // 230
         color: "#A78BFA", // Púrpura
@@ -119,7 +121,8 @@ async function main() {
     }),
     prisma.post.create({
       data: {
-        content: "⏰ Recordatorio importante:\nEntrega en classroom.google.com\nFecha límite: Domingo 23:59",
+        content:
+          "⏰ Recordatorio importante:\nEntrega en classroom.google.com\nFecha límite: Domingo 23:59",
         x: 50 + (postWidth + margin) * 2, // 510
         y: 50 + postHeight + margin, // 230
         color: "#FB7185", // Rosa
