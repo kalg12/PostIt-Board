@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
-import { Stage, Layer } from "react-konva";
-import Konva from "konva";
-import PostItComponent from "./PostItComponent";
-import Minimap from "./Minimap";
-import { usePostStore, useAuthStore } from "@/store/useStore";
-import { Plus } from "lucide-react";
-import PostItForm from "./PostItForm";
-import { findFreePosition } from "@/lib/canvas-utils";
+interface Subject {
+  id: string;
+  name: string;
+}
+
+interface Teacher {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 interface Post {
   id: string;
@@ -22,11 +24,69 @@ interface Post {
     group: string;
     career: string;
   };
+  subject?: { id: string; name: string } | null;
+  teacher?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { Stage, Layer } from "react-konva";
+import Konva from "konva";
+import PostItComponent from "./PostItComponent";
+import Minimap from "./Minimap";
+import { usePostStore, useAuthStore } from "@/store/useStore";
+import { Plus } from "lucide-react";
+import PostItForm from "./PostItForm";
+import { findFreePosition } from "@/lib/canvas-utils";
+
+// Interfaces solo una vez, al inicio
+interface Subject {
+  id: string;
+  name: string;
+}
+
+interface Teacher {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface Post {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  color: string;
+  authorId: string;
+  author: {
+    name: string;
+    group: string;
+    career: string;
+  };
+  subject?: { id: string; name: string } | null;
+  teacher?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export default function CanvasBoard() {
+  // Filtros
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedTeacher, setSelectedTeacher] = useState<string>("");
   const { posts, setPosts, addPost, updatePost } = usePostStore();
   const { isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -43,10 +103,15 @@ export default function CanvasBoard() {
   const minScale = 0.1;
   const maxScale = 3;
 
-  // Obtener posts al cargar
+  // Obtener posts con filtros
   const fetchPosts = useCallback(async () => {
     try {
-      const response = await fetch("/api/posts");
+      let url = "/api/posts";
+      const params = [];
+      if (selectedSubject) params.push(`subjectId=${selectedSubject}`);
+      if (selectedTeacher) params.push(`teacherId=${selectedTeacher}`);
+      if (params.length) url += `?${params.join("&")}`;
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
@@ -56,7 +121,20 @@ export default function CanvasBoard() {
     } finally {
       setIsLoading(false);
     }
-  }, [setPosts]);
+  }, [setPosts, selectedSubject, selectedTeacher]);
+  // Obtener materias y profesores para los filtros
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const res = await fetch("/api/subjects");
+      if (res.ok) setSubjects(await res.json());
+    };
+    const fetchTeachers = async () => {
+      const res = await fetch("/api/teachers");
+      if (res.ok) setTeachers(await res.json());
+    };
+    fetchSubjects();
+    fetchTeachers();
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -285,6 +363,46 @@ export default function CanvasBoard() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      {/* Filtros */}
+      <div className="absolute top-4 left-4 z-20 flex gap-4 bg-white/80 p-3 rounded-lg shadow-md">
+        <button
+          className={`px-3 py-1 rounded ${
+            !selectedSubject && !selectedTeacher
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
+          }`}
+          onClick={() => {
+            setSelectedSubject("");
+            setSelectedTeacher("");
+          }}
+        >
+          Ver todo
+        </button>
+        <select
+          className="px-2 py-1 rounded border"
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+        >
+          <option value="">Filtrar por materia</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="px-2 py-1 rounded border"
+          value={selectedTeacher}
+          onChange={(e) => setSelectedTeacher(e.target.value)}
+        >
+          <option value="">Filtrar por profesor</option>
+          {teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.firstName} {t.lastName}
+            </option>
+          ))}
+        </select>
+      </div>
       {/* Botón para agregar post */}
       {isAuthenticated && (
         <button

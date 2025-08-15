@@ -28,13 +28,41 @@ const updatePostSchema = z.object({
 // GET - Obtener todos los posts
 export async function GET() {
   try {
+    // Next.js API route: obtener searchParams desde el request
+    const req = arguments[0];
+    let subjectId = "";
+    let teacherId = "";
+    if (req && req.nextUrl) {
+      subjectId = req.nextUrl.searchParams.get("subjectId") || "";
+      teacherId = req.nextUrl.searchParams.get("teacherId") || "";
+    }
+
+    const where: any = {};
+    if (subjectId) where.subjectId = subjectId;
+    if (teacherId) where.teacherId = teacherId;
+
     const posts = await prisma.post.findMany({
+      where,
       include: {
         author: {
           select: {
             name: true,
             group: true,
             career: true,
+          },
+        },
+        subject: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
       },

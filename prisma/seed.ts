@@ -4,27 +4,67 @@ import { hashPassword } from "../src/lib/auth";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Crear usuario administrador
-  const adminPassword = await hashPassword("admin123");
-
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@postit.com" },
-    update: {},
-    create: {
-      name: "Administrador",
-      email: "admin@postit.com",
-      password: adminPassword,
-      group: "ADMIN",
-      career: "SISTEMAS",
-      role: "ADMIN",
-    },
+  // Crear profesores
+  const teachers = await prisma.teacher.createMany({
+    data: [
+      { firstName: "Ana", lastName: "Martínez", email: "ana.martinez@uni.com" },
+      { firstName: "Luis", lastName: "Gómez", email: "luis.gomez@uni.com" },
+      { firstName: "Sofía", lastName: "Ruiz", email: "sofia.ruiz@uni.com" },
+    ],
+    skipDuplicates: true,
   });
 
-  console.log("Usuario administrador creado:", admin);
+  // Obtener IDs de profesores
+  const teacherAna = await prisma.teacher.findUnique({
+    where: { email: "ana.martinez@uni.com" },
+  });
+  const teacherLuis = await prisma.teacher.findUnique({
+    where: { email: "luis.gomez@uni.com" },
+  });
+  const teacherSofia = await prisma.teacher.findUnique({
+    where: { email: "sofia.ruiz@uni.com" },
+  });
 
-  // Crear algunos usuarios de ejemplo
+  // Crear materias
+  const subjects = await prisma.subject.createMany({
+    data: [{ name: "Matemáticas" }, { name: "Historia" }, { name: "Química" }],
+    skipDuplicates: true,
+  });
+
+  // Obtener IDs de materias
+  const subjectMat = await prisma.subject.findFirst({
+    where: { name: "Matemáticas" },
+  });
+  const subjectHis = await prisma.subject.findFirst({
+    where: { name: "Historia" },
+  });
+  const subjectQui = await prisma.subject.findFirst({
+    where: { name: "Química" },
+  });
+
+  // Relacionar profesores y materias (muchos a muchos)
+  if (teacherAna && subjectMat) {
+    await prisma.teacher.update({
+      where: { id: teacherAna.id },
+      data: { subjects: { connect: [{ id: subjectMat.id }] } },
+    });
+  }
+  if (teacherLuis && subjectHis) {
+    await prisma.teacher.update({
+      where: { id: teacherLuis.id },
+      data: { subjects: { connect: [{ id: subjectHis.id }] } },
+    });
+  }
+  if (teacherSofia && subjectQui) {
+    await prisma.teacher.update({
+      where: { id: teacherSofia.id },
+      data: { subjects: { connect: [{ id: subjectQui.id }] } },
+    });
+  }
+
+  // Crear usuarios
+  const adminPassword = await hashPassword("admin123");
   const userPassword = await hashPassword("123456");
-
   const users = await Promise.all([
     prisma.user.upsert({
       where: { email: "juan@estudiante.com" },
@@ -59,107 +99,63 @@ async function main() {
         career: "DERECHO",
       },
     }),
+    prisma.user.upsert({
+      where: { email: "admin@postit.com" },
+      update: {},
+      create: {
+        name: "Administrador",
+        email: "admin@postit.com",
+        password: adminPassword,
+        group: "ADMIN",
+        career: "SISTEMAS",
+        role: "ADMIN",
+      },
+    }),
   ]);
 
-  console.log("Usuarios de ejemplo creados:", users.length);
-
-  // Crear algunos posts de ejemplo con posiciones bien distribuidas (sin superposiciones)
+  // Crear posts con relaciones
   const postWidth = 200;
   const postHeight = 150;
-  const margin = 30; // Margen entre posts
-
+  const margin = 30;
   const posts = await Promise.all([
-    // Primera fila
     prisma.post.create({
       data: {
         content: "📚 Completar tarea de matemáticas para el viernes",
         x: 50,
         y: 50,
-        color: "#FBBF24", // Amarillo
+        color: "#FBBF24",
         authorId: users[0].id,
+        subjectId: subjectMat?.id,
+        teacherId: teacherAna?.id,
       },
     }),
     prisma.post.create({
       data: {
         content: "🎤 Preparar presentación de historia para la próxima semana",
-        x: 50 + postWidth + margin, // 280
+        x: 50 + postWidth + margin,
         y: 50,
-        color: "#F87171", // Rojo claro
+        color: "#F87171",
         authorId: users[1].id,
+        subjectId: subjectHis?.id,
+        teacherId: teacherLuis?.id,
       },
     }),
     prisma.post.create({
       data: {
         content: "⚗️ Estudiar para examen de química - Capítulos 5 y 6",
-        x: 50 + (postWidth + margin) * 2, // 510
+        x: 50 + (postWidth + margin) * 2,
         y: 50,
-        color: "#60A5FA", // Azul
+        color: "#60A5FA",
         authorId: users[2].id,
-      },
-    }),
-
-    // Segunda fila - Posts con URLs
-    prisma.post.create({
-      data: {
-        content:
-          "📄 Revisar documentación importante:\nhttps://docs.google.com/document/d/abc123\nAntes del proyecto final",
-        x: 50,
-        y: 50 + postHeight + margin, // 230
-        color: "#34D399", // Verde
-        authorId: users[0].id,
-      },
-    }),
-    prisma.post.create({
-      data: {
-        content:
-          "🎥 Tutorial muy útil:\nwww.youtube.com/watch?v=tutorial123\n\n💻 También revisar:\ngithub.com/usuario/proyecto-ejemplo",
-        x: 50 + postWidth + margin, // 280
-        y: 50 + postHeight + margin, // 230
-        color: "#A78BFA", // Púrpura
-        authorId: users[1].id,
-      },
-    }),
-    prisma.post.create({
-      data: {
-        content:
-          "⏰ Recordatorio importante:\nEntrega en classroom.google.com\nFecha límite: Domingo 23:59",
-        x: 50 + (postWidth + margin) * 2, // 510
-        y: 50 + postHeight + margin, // 230
-        color: "#FB7185", // Rosa
-        authorId: users[2].id,
-      },
-    }),
-
-    // Tercera fila
-    prisma.post.create({
-      data: {
-        content: "📖 Leer capítulos 1-3 del libro de texto",
-        x: 50,
-        y: 50 + (postHeight + margin) * 2, // 410
-        color: "#FCD34D", // Amarillo más claro
-        authorId: users[0].id,
-      },
-    }),
-    prisma.post.create({
-      data: {
-        content: "👥 Reunión de equipo - Viernes 3 PM\nSala de conferencias B",
-        x: 50 + postWidth + margin, // 280
-        y: 50 + (postHeight + margin) * 2, // 410
-        color: "#86EFAC", // Verde claro
-        authorId: users[1].id,
-      },
-    }),
-    prisma.post.create({
-      data: {
-        content: "🏃‍♀️ Ejercicio personal:\nCorrer 30 min todos los días",
-        x: 50 + (postWidth + margin) * 2, // 510
-        y: 50 + (postHeight + margin) * 2, // 410
-        color: "#F9A8D4", // Rosa claro
-        authorId: users[2].id,
+        subjectId: subjectQui?.id,
+        teacherId: teacherSofia?.id,
       },
     }),
   ]);
 
+  console.log("Profesores creados:", teachers.count);
+  console.log("Materias creadas:", subjects.count);
+  console.log("Usuarios de ejemplo creados:", users.length);
   console.log("Posts de ejemplo creados:", posts.length);
 }
 

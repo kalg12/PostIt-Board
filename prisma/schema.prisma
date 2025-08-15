@@ -24,6 +24,24 @@ enum Career {
   MEDICINA
 }
 
+model Teacher {
+  id        String    @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  subjects  Subject[] @relation("TeacherSubjects")
+  posts     Post[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Subject {
+  id        String    @id @default(cuid())
+  name      String
+  teachers  Teacher[] @relation("TeacherSubjects")
+  posts     Post[]
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -41,16 +59,20 @@ model User {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  x         Float
-  y         Float
-  color     String   @default("#FBBF24")
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  x          Float
+  y          Float
+  color      String   @default("#FBBF24")
+  authorId   String
+  subjectId  String?
+  teacherId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subject    Subject?  @relation(fields: [subjectId], references: [id])
+  teacher    Teacher?  @relation(fields: [teacherId], references: [id])
+
   @@map("posts")
 }
