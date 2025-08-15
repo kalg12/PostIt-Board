@@ -443,9 +443,8 @@ export default function CanvasBoard() {
             <PostItComponent
               key={post.id}
               post={post}
-              allPosts={posts}
-              onMove={(newPos: { x: number; y: number }) =>
-                handlePostMove(post.id, newPos)
+              onMove={(x: number, y: number) =>
+                handlePostMove(post.id, { x, y })
               }
               onUpdate={(updates: Partial<Post>) =>
                 handlePostUpdate(post.id, updates)

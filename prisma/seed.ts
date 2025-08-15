@@ -115,7 +115,6 @@ async function main() {
 
   // Crear posts con relaciones
   const postWidth = 200;
-  const postHeight = 150;
   const margin = 30;
   const posts = await Promise.all([
     prisma.post.create({
