@@ -245,13 +245,15 @@ export default function PostItComponent({
       x={post.x}
       y={post.y}
       draggable={true}
+      dragBoundFunc={(pos) => pos} // Permite movimiento inmediato, sin delay
+      onDragMove={() => setIsDragging(true)} // Marca como arrastrando para feedback visual
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDblClick={handleDoubleClick}
       onContextMenu={handleRightClick}
-      opacity={isDragging ? 0.8 : 1}
-      scaleX={isDragging ? 1.05 : 1}
-      scaleY={isDragging ? 1.05 : 1}
+      opacity={isDragging ? 0.85 : 1}
+      scaleX={isDragging ? 1.07 : 1}
+      scaleY={isDragging ? 1.07 : 1}
     >
       {/* Sombra */}
       <Rect

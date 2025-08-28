@@ -280,37 +280,32 @@ export default function CanvasBoard() {
     }
   };
 
-  const handlePostMove = async (
-    postId: string,
-    newPos: { x: number; y: number }
-  ) => {
-    try {
-      // Actualizar localmente primero para mejor UX
-      updatePost(postId, newPos);
-
-      const response = await fetch("/api/posts", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          id: postId,
-          x: newPos.x,
-          y: newPos.y,
-        }),
+  // Movimiento optimista: actualiza localmente y sincroniza con backend solo al soltar
+  const handlePostMove = (postId: string, newPos: { x: number; y: number }) => {
+    // Actualizar localmente primero para mejor UX
+    updatePost(postId, newPos);
+    // Sincronizar con backend en segundo plano (no bloquea el UI)
+    fetch("/api/posts", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        id: postId,
+        x: newPos.x,
+        y: newPos.y,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          // Solo mostrar error, no recargar todos los posts
+          console.error("Error al mover post (backend)");
+        }
+      })
+      .catch((error) => {
+        console.error("Error al mover post (network):", error);
       });
-
-      if (!response.ok) {
-        // Si falla, recargar posts para revertir el cambio
-        await fetchPosts();
-        console.error("Error al mover post");
-      }
-    } catch (error) {
-      // Si falla, recargar posts para revertir el cambio
-      await fetchPosts();
-      console.error("Error al mover post:", error);
-    }
   };
 
   const handlePostUpdate = async (postId: string, updates: Partial<Post>) => {
@@ -430,7 +425,6 @@ export default function CanvasBoard() {
         ref={stageRef}
         width={stageSize.width}
         height={stageSize.height}
-        draggable
         onClick={handleStageClick}
         onWheel={handleWheel}
         scaleX={scale}
