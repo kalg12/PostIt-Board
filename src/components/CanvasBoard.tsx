@@ -103,6 +103,9 @@ export default function CanvasBoard() {
   const minScale = 0.1;
   const maxScale = 3;
 
+  // Estado para posiciones locales
+  const [localPositions, setLocalPositions] = useState<{ [id: string]: { x: number; y: number } }>({});
+
   // Obtener posts con filtros
   const fetchPosts = useCallback(async () => {
     try {
@@ -282,30 +285,11 @@ export default function CanvasBoard() {
 
   // Movimiento optimista: actualiza localmente y sincroniza con backend solo al soltar
   const handlePostMove = (postId: string, newPos: { x: number; y: number }) => {
-    // Actualizar localmente primero para mejor UX
-    updatePost(postId, newPos);
-    // Sincronizar con backend en segundo plano (no bloquea el UI)
-    fetch("/api/posts", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        id: postId,
-        x: newPos.x,
-        y: newPos.y,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          // Solo mostrar error, no recargar todos los posts
-          console.error("Error al mover post (backend)");
-        }
-      })
-      .catch((error) => {
-        console.error("Error al mover post (network):", error);
-      });
+    setLocalPositions((prev) => {
+      const updated = { ...prev, [postId]: newPos };
+      saveLocalPositions(updated);
+      return updated;
+    });
   };
 
   const handlePostUpdate = async (postId: string, updates: Partial<Post>) => {
@@ -347,6 +331,30 @@ export default function CanvasBoard() {
       console.error("Error al eliminar post:", error);
     }
   };
+
+  // Al cargar posts, cargar posiciones locales si existen
+  useEffect(() => {
+    const saved = localStorage.getItem("postit-local-positions");
+    if (saved) {
+      setLocalPositions(JSON.parse(saved));
+    }
+  }, []);
+
+  // Guardar posiciones locales en localStorage
+  const saveLocalPositions = (positions: { [id: string]: { x: number; y: number } }) => {
+    localStorage.setItem("postit-local-positions", JSON.stringify(positions));
+  };
+
+  // Optimización: solo renderizar los post-its visibles y evitar re-render innecesario
+  // Memoizar el mapeo de posts visibles
+  const visiblePosts = React.useMemo(() => {
+    // Solo mapear los posts que vienen del filtro, y para cada uno, aplicar la posición local si existe
+    return posts.map((post) => {
+      const pos = localPositions[post.id];
+      // Solo sobreescribir x/y si hay posición local
+      return pos ? { ...post, x: pos.x, y: pos.y } : post;
+    });
+  }, [posts, localPositions]);
 
   if (isLoading) {
     return (
@@ -433,16 +441,12 @@ export default function CanvasBoard() {
         y={viewportPosition.y}
       >
         <Layer>
-          {posts.map((post) => (
+          {visiblePosts.map((post) => (
             <PostItComponent
               key={post.id}
               post={post}
-              onMove={(x: number, y: number) =>
-                handlePostMove(post.id, { x, y })
-              }
-              onUpdate={(updates: Partial<Post>) =>
-                handlePostUpdate(post.id, updates)
-              }
+              onMove={(x: number, y: number) => handlePostMove(post.id, { x, y })}
+              onUpdate={(updates: Partial<Post>) => handlePostUpdate(post.id, updates)}
               onDelete={() => handlePostDelete(post.id)}
             />
           ))}
