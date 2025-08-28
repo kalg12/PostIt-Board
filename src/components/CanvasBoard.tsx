@@ -104,7 +104,9 @@ export default function CanvasBoard() {
   const maxScale = 3;
 
   // Estado para posiciones locales
-  const [localPositions, setLocalPositions] = useState<{ [id: string]: { x: number; y: number } }>({});
+  const [localPositions, setLocalPositions] = useState<{
+    [id: string]: { x: number; y: number };
+  }>({});
 
   // Obtener posts con filtros
   const fetchPosts = useCallback(async () => {
@@ -341,7 +343,9 @@ export default function CanvasBoard() {
   }, []);
 
   // Guardar posiciones locales en localStorage
-  const saveLocalPositions = (positions: { [id: string]: { x: number; y: number } }) => {
+  const saveLocalPositions = (positions: {
+    [id: string]: { x: number; y: number };
+  }) => {
     localStorage.setItem("postit-local-positions", JSON.stringify(positions));
   };
 
@@ -445,8 +449,12 @@ export default function CanvasBoard() {
             <PostItComponent
               key={post.id}
               post={post}
-              onMove={(x: number, y: number) => handlePostMove(post.id, { x, y })}
-              onUpdate={(updates: Partial<Post>) => handlePostUpdate(post.id, updates)}
+              onMove={(x: number, y: number) =>
+                handlePostMove(post.id, { x, y })
+              }
+              onUpdate={(updates: Partial<Post>) =>
+                handlePostUpdate(post.id, updates)
+              }
               onDelete={() => handlePostDelete(post.id)}
             />
           ))}
