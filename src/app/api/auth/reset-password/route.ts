@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
+// import { prisma } from "@/lib/prisma";
+// import { hashPassword } from "@/lib/auth";
 import { z } from "zod";
 
 const resetPasswordSchema = z.object({
@@ -11,7 +11,7 @@ const resetPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, password } = resetPasswordSchema.parse(body);
+    const { password: _password } = resetPasswordSchema.parse(body);
 
     // En un proyecto real, aquí buscarías el token en la base de datos
     // y verificarías que no haya expirado
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // }
 
     // Hash de la nueva contraseña
-    const hashedPassword = await hashPassword(password);
+    // const hashedPassword = await hashPassword(password);
 
     // Actualizar contraseña y limpiar token
     // await prisma.user.update({

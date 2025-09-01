@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         if (error instanceof z.ZodError) {
           results.errors.push(
-            `Línea ${i + 1}: ${error.errors.map((e) => e.message).join(", ")}`
+            `Línea ${i + 1}: ${error.issues.map((e) => e.message).join(", ")}`
           );
         } else {
           results.errors.push(
