@@ -8,7 +8,7 @@ import { LogIn, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    email: "",
+    emailOrUsername: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -85,25 +85,25 @@ export default function LoginPage() {
 
             <div>
               <label
-                htmlFor="email"
+                htmlFor="emailOrUsername"
                 className="block text-sm font-medium text-gray-700"
               >
-                Correo electrónico
+                Correo electrónico o Username
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="emailOrUsername"
+                  name="emailOrUsername"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={formData.email}
+                  value={formData.emailOrUsername}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tu@ejemplo.com"
+                  placeholder="tu@ejemplo.com o tu_username"
                 />
               </div>
             </div>

@@ -5,7 +5,7 @@ export const COLORS = [
   "#34D399", // Verde claro
   "#A78BFA", // Púrpura claro
   "#FB7185", // Rosa claro
-  "#FBBF24", // Naranja claro
+  "#F59E0B", // Naranja
   "#4ADE80", // Verde
   "#38BDF8", // Azul cielo
   "#C084FC", // Púrpura

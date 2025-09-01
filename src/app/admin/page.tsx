@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useStore";
 import { useRouter } from "next/navigation";
-import { Users, BarChart3, Trash2 } from "lucide-react";
+import { Users, BarChart3, Trash2, Upload, Download } from "lucide-react";
 
 interface User {
   id: string;
   name: string;
+  username: string;
   email: string;
   group: string;
   career: string;
+  numero_de_control?: string;
   role: string;
   createdAt: string;
   _count: {
@@ -63,6 +65,8 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "ADMIN") {
@@ -154,6 +158,61 @@ export default function AdminPage() {
     }
   };
 
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/users/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUploadMessage(`✅ ${result.message}`);
+        fetchUsers();
+        fetchStats();
+      } else {
+        setUploadMessage(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      setUploadMessage(
+        `❌ Error al subir archivo: ${
+          error instanceof Error ? error.message : "Error desconocido"
+        }`
+      );
+    } finally {
+      setIsUploading(false);
+      // Limpiar el input
+      event.target.value = "";
+    }
+  };
+
+  const downloadTemplate = () => {
+    const csvContent =
+      "grupo,username,password,firstname,numero_de_control\nA,cult1_26,kkno4,ACEVEDO QUIROS JESUS ROBERTO,25212030180002\nA,cult2_26,c5uc7,AGUILAR MATUS CARMEN EVELYN,25212030180042";
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "usuarios_template.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -208,81 +267,156 @@ export default function AdminPage() {
 
         {/* Content */}
         {activeTab === "users" && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                Gestión de Usuarios ({users.length})
-              </h3>
+          <div className="space-y-6">
+            {/* CSV Upload Section */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Cargar Usuarios desde CSV
+                </h3>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Usuario
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Grupo/Carrera
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Posts
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Rol
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {user.name}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={downloadTemplate}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Descargar Plantilla
+                    </button>
+
+                    <label className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 cursor-pointer">
+                      <Upload className="h-4 w-4 mr-2" />
+                      {isUploading ? "Subiendo..." : "Subir CSV"}
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+
+                  {uploadMessage && (
+                    <div
+                      className={`p-3 rounded-md ${
+                        uploadMessage.includes("✅")
+                          ? "bg-green-50 text-green-800 border border-green-200"
+                          : "bg-red-50 text-red-800 border border-red-200"
+                      }`}
+                    >
+                      {uploadMessage}
+                    </div>
+                  )}
+
+                  <div className="text-sm text-gray-600">
+                    <p>
+                      <strong>Formato CSV requerido:</strong>
+                    </p>
+                    <p>grupo,username,password,firstname,numero_de_control</p>
+                    <p className="mt-2 text-xs">
+                      Ejemplo: A,cult1_26,kkno4,ACEVEDO QUIROS JESUS
+                      ROBERTO,25212030180002
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Gestión de Usuarios ({users.length})
+                </h3>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Usuario
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Username
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Grupo/Carrera
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Número de Control
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Posts
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Rol
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {users.map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {user.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {user.username}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {user.group}
                             </div>
                             <div className="text-sm text-gray-500">
-                              {user.email}
+                              {user.career}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {user.group}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {user.career}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user._count.posts}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <select
-                            value={user.role}
-                            onChange={(e) =>
-                              handleChangeRole(user.id, e.target.value)
-                            }
-                            className="text-sm border border-gray-300 rounded px-2 py-1"
-                          >
-                            <option value="STUDENT">STUDENT</option>
-                            <option value="ADMIN">ADMIN</option>
-                          </select>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900 ml-4"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {user.numero_de_control || "N/A"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {user._count.posts}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <select
+                              value={user.role}
+                              onChange={(e) =>
+                                handleChangeRole(user.id, e.target.value)
+                              }
+                              className="text-sm border border-gray-300 rounded px-2 py-1"
+                            >
+                              <option value="STUDENT">STUDENT</option>
+                              <option value="ADMIN">ADMIN</option>
+                            </select>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="text-red-600 hover:text-red-900 ml-4"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

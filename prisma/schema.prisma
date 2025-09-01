@@ -43,17 +43,19 @@ model Subject {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  group     String
-  career    Career
-  role      Role     @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  username         String   @unique
+  email            String   @unique
+  password         String
+  group            String
+  career           Career
+  numero_de_control String?  @unique
+  role             Role     @default(STUDENT)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   
-  posts     Post[]
+  posts            Post[]
   
   @@map("users")
 }

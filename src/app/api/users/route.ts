@@ -9,6 +9,10 @@ const updateUserSchema = z.object({
     .string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .optional(),
+  username: z
+    .string()
+    .min(2, "El username debe tener al menos 2 caracteres")
+    .optional(),
   email: z.string().email("Email inválido").optional(),
   password: z
     .string()
@@ -25,6 +29,7 @@ const updateUserSchema = z.object({
       "MEDICINA",
     ])
     .optional(),
+  numero_de_control: z.string().optional(),
   role: z.enum(["ADMIN", "STUDENT"]).optional(),
 });
 
@@ -37,9 +42,11 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         group: true,
         career: true,
+        numero_de_control: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -120,15 +127,51 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Si se está actualizando el username, verificar que no exista
+    if (
+      validatedData.username &&
+      validatedData.username !== existingUser.username
+    ) {
+      const usernameExists = await prisma.user.findUnique({
+        where: { username: validatedData.username },
+      });
+
+      if (usernameExists) {
+        return NextResponse.json(
+          { error: "El username ya está en uso" },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Si se está actualizando el numero_de_control, verificar que no exista
+    if (
+      validatedData.numero_de_control &&
+      validatedData.numero_de_control !== existingUser.numero_de_control
+    ) {
+      const controlExists = await prisma.user.findUnique({
+        where: { numero_de_control: validatedData.numero_de_control },
+      });
+
+      if (controlExists) {
+        return NextResponse.json(
+          { error: "El número de control ya está en uso" },
+          { status: 409 }
+        );
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: validatedData,
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         group: true,
         career: true,
+        numero_de_control: true,
         role: true,
         createdAt: true,
         updatedAt: true,

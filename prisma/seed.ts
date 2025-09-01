@@ -71,10 +71,12 @@ async function main() {
       update: {},
       create: {
         name: "Juan Pérez",
+        username: "juan_perez",
         email: "juan@estudiante.com",
         password: userPassword,
-        group: "A1",
+        group: "A",
         career: "SISTEMAS",
+        numero_de_control: "25212030180001",
       },
     }),
     prisma.user.upsert({
@@ -82,10 +84,12 @@ async function main() {
       update: {},
       create: {
         name: "María García",
+        username: "maria_garcia",
         email: "maria@estudiante.com",
         password: userPassword,
-        group: "B2",
+        group: "A",
         career: "CONTADURIA",
+        numero_de_control: "25212030180002",
       },
     }),
     prisma.user.upsert({
@@ -93,10 +97,12 @@ async function main() {
       update: {},
       create: {
         name: "Carlos López",
+        username: "carlos_lopez",
         email: "carlos@estudiante.com",
         password: userPassword,
-        group: "C1",
+        group: "B",
         career: "DERECHO",
+        numero_de_control: "25212030180003",
       },
     }),
     prisma.user.upsert({
@@ -104,11 +110,13 @@ async function main() {
       update: {},
       create: {
         name: "Administrador",
+        username: "admin",
         email: "admin@postit.com",
         password: adminPassword,
         group: "ADMIN",
         career: "SISTEMAS",
         role: "ADMIN",
+        numero_de_control: "00000000000000",
       },
     }),
   ]);

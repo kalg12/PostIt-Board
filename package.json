@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx prisma/seed.ts",
+    "clean": "tsx prisma/clean-db.ts",
+    "reset": "npm run clean && npm run seed",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -16,10 +18,13 @@
     "@radix-ui/react-toast": "^1.2.14",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "bcryptjs": "^3.0.2",
+    "csv-parser": "^3.2.0",
     "jsonwebtoken": "^9.0.2",
     "konva": "^9.3.22",
     "lucide-react": "^0.526.0",
+    "multer": "^2.0.2",
     "mysql2": "^3.14.2",
     "next": "15.4.4",
     "prisma": "^6.12.0",

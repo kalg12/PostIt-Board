@@ -17,11 +17,13 @@ const CAREERS = [
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
     group: "",
     career: "",
+    numero_de_control: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,10 +67,12 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({
           name: formData.name,
+          username: formData.username,
           email: formData.email,
           password: formData.password,
           group: formData.group,
           career: formData.career,
+          numero_de_control: formData.numero_de_control,
         }),
       });
 
@@ -139,6 +143,30 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Juan Pérez"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Username
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="juan_perez"
                 />
               </div>
             </div>
@@ -218,6 +246,29 @@ export default function RegisterPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="numero_de_control"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Número de Control (Opcional)
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="numero_de_control"
+                  name="numero_de_control"
+                  type="text"
+                  value={formData.numero_de_control}
+                  onChange={handleChange}
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="25212030180001"
+                />
               </div>
             </div>
 
