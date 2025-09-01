@@ -142,7 +142,6 @@ export async function POST(request: NextRequest) {
             email,
             password: hashedPassword,
             group: validatedData.grupo,
-            career: "SISTEMAS", // Por defecto, se puede cambiar después
             numero_de_control: validatedData.numero_de_control,
             role: "STUDENT",
           },

@@ -9,14 +9,6 @@ const registerSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   group: z.string().min(1, "El grupo es requerido"),
-  career: z.enum([
-    "SISTEMAS",
-    "CONTADURIA",
-    "DERECHO",
-    "ADMINISTRACION",
-    "PSICOLOGIA",
-    "MEDICINA",
-  ]),
   numero_de_control: z.string().optional(),
 });
 
@@ -24,15 +16,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const {
-      name,
-      username,
-      email,
-      password,
-      group,
-      career,
-      numero_de_control,
-    } = registerSchema.parse(body);
+    const { name, username, email, password, group, numero_de_control } =
+      registerSchema.parse(body);
 
     // Verificar si el usuario ya existe
     const existingUser = await prisma.user.findFirst({
@@ -58,7 +43,10 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       }
-      if (existingUser.numero_de_control === numero_de_control) {
+      if (
+        numero_de_control &&
+        existingUser.numero_de_control === numero_de_control
+      ) {
         return NextResponse.json(
           { error: "El número de control ya está en uso" },
           { status: 409 }
@@ -77,8 +65,7 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         group,
-        career,
-        numero_de_control,
+        ...(numero_de_control && { numero_de_control }),
       },
     });
 

@@ -1,76 +1,97 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuthStore } from "@/store/useStore";
-import { LogIn, Mail, Lock } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 
-export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    emailOrUsername: "",
-    password: "",
-  });
+export default function ResetPasswordPage() {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [token, setToken] = useState("");
 
-  const { login } = useAuthStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  useEffect(() => {
+    const tokenParam = searchParams.get("token");
+    if (tokenParam) {
+      setToken(tokenParam);
+    } else {
+      setError("Token de recuperación no válido");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccess("");
+
+    // Validaciones
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ token, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Guardar token en localStorage
-        localStorage.setItem("token", data.token);
-
-        // Actualizar estado global
-        login(data.user, data.token);
-
-        // Redirigir al dashboard
-        router.push("/");
+        setSuccess(
+          "Contraseña restablecida exitosamente. Redirigiendo al login..."
+        );
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
       } else {
-        setError(data.error || "Error al iniciar sesión");
+        setError(data.error || "Error al restablecer la contraseña");
       }
     } catch (error) {
-      console.error("Error en login:", error);
+      console.error("Error en reset password:", error);
       setError("Error de conexión");
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (!token && !error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg">Cargando...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <LogIn className="h-12 w-12 text-blue-600" />
+          <Lock className="h-12 w-12 text-blue-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Iniciar Sesión
+          Restablecer Contraseña
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Accede a tu cuenta para publicar post-its
+          Ingresa tu nueva contraseña
         </p>
       </div>
 
@@ -83,37 +104,18 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div>
-              <label
-                htmlFor="emailOrUsername"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Correo electrónico o Username
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="emailOrUsername"
-                  name="emailOrUsername"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={formData.emailOrUsername}
-                  onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tu@ejemplo.com o tu_username"
-                />
+            {success && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                {success}
               </div>
-            </div>
+            )}
 
             <div>
               <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700"
               >
-                Contraseña
+                Nueva contraseña
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -123,10 +125,33 @@ export default function LoginPage() {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
                   required
-                  value={formData.password}
-                  onChange={handleChange}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Confirmar nueva contraseña
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="••••••••"
                 />
@@ -136,38 +161,28 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !token}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Iniciando sesión...
+                    Restableciendo...
                   </div>
                 ) : (
-                  "Iniciar Sesión"
+                  "Restablecer Contraseña"
                 )}
               </button>
             </div>
 
-            <div className="text-sm text-center space-y-2">
-              <div>
-                <Link
-                  href="/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
-              <div>
-                <span className="text-gray-600">¿No tienes una cuenta? </span>
-                <Link
-                  href="/register"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Regístrate aquí
-                </Link>
-              </div>
+            <div className="text-sm text-center">
+              <Link
+                href="/login"
+                className="font-medium text-blue-600 hover:text-blue-500 flex items-center justify-center"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Volver al inicio de sesión
+              </Link>
             </div>
           </form>
         </div>

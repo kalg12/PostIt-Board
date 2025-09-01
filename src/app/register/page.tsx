@@ -3,15 +3,17 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus, User, Mail, Lock, Users, GraduationCap } from "lucide-react";
+import { UserPlus, User, Mail, Lock, Users } from "lucide-react";
 
-const CAREERS = [
-  { value: "SISTEMAS", label: "Sistemas" },
-  { value: "CONTADURIA", label: "Contaduría" },
-  { value: "DERECHO", label: "Derecho" },
-  { value: "ADMINISTRACION", label: "Administración" },
-  { value: "PSICOLOGIA", label: "Psicología" },
-  { value: "MEDICINA", label: "Medicina" },
+const GROUPS = [
+  { value: "A", label: "Grupo A" },
+  { value: "B", label: "Grupo B" },
+  { value: "C", label: "Grupo C" },
+  { value: "D", label: "Grupo D" },
+  { value: "E", label: "Grupo E" },
+  { value: "F", label: "Grupo F" },
+  { value: "G", label: "Grupo G" },
+  { value: "H", label: "Grupo H" },
 ];
 
 export default function RegisterPage() {
@@ -22,7 +24,6 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     group: "",
-    career: "",
     numero_de_control: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +72,6 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           group: formData.group,
-          career: formData.career,
           numero_de_control: formData.numero_de_control,
         }),
       });
@@ -207,42 +207,18 @@ export default function RegisterPage() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Users className="h-5 w-5 text-gray-400" />
                 </div>
-                <input
+                <select
                   id="group"
                   name="group"
-                  type="text"
                   required
                   value={formData.group}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="A1, B2, C3, etc."
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="career"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Carrera
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <GraduationCap className="h-5 w-5 text-gray-400" />
-                </div>
-                <select
-                  id="career"
-                  name="career"
-                  required
-                  value={formData.career}
-                  onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="">Selecciona una carrera</option>
-                  {CAREERS.map((career) => (
-                    <option key={career.value} value={career.value}>
-                      {career.label}
+                  <option value="">Selecciona un grupo</option>
+                  {GROUPS.map((group) => (
+                    <option key={group.value} value={group.value}>
+                      {group.label}
                     </option>
                   ))}
                 </select>

@@ -49,7 +49,7 @@ model User {
   email            String   @unique
   password         String
   group            String
-  career           Career
+  career           Career?
   numero_de_control String?  @unique
   role             Role     @default(STUDENT)
   createdAt        DateTime @default(now())
