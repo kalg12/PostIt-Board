@@ -37,6 +37,7 @@ import { GROUPS } from "@/lib/constants";
 export default function CanvasBoard() {
   // Filtros
   const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [searchName, setSearchName] = useState<string>("");
   const { posts, setPosts, addPost, updatePost } = usePostStore();
   const { isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -64,18 +65,26 @@ export default function CanvasBoard() {
       let url = "/api/posts";
       const params = [];
       if (selectedGroup) params.push(`group=${selectedGroup}`);
+      if (searchName.trim())
+        params.push(`name=${encodeURIComponent(searchName.trim())}`);
       if (params.length) url += `?${params.join("&")}`;
+      
+      console.log("Fetching posts from:", url);
       const response = await fetch(url);
+      console.log("Response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
+      } else {
+        console.error("Response not ok:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Error al cargar posts:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [setPosts, selectedGroup]);
+  }, [setPosts, selectedGroup, searchName]);
 
   useEffect(() => {
     fetchPosts();
@@ -350,21 +359,24 @@ export default function CanvasBoard() {
   }
 
   return (
-    <div className="relative w-full flex-1 overflow-hidden">
+    <div className="relative w-full flex-1 overflow-hidden mural-bg">
       {/* Filtros */}
-      <div className="absolute top-4 left-4 z-20 flex gap-4 bg-white/80 p-3 rounded-lg shadow-md">
+      <div className="absolute top-4 left-4 z-20 flex gap-3 bg-white/80 p-3 rounded-lg shadow-md">
         <button
-          className={`px-3 py-1 rounded ${
-            !selectedGroup ? "bg-blue-600 text-white" : "bg-gray-200"
+          className={`px-3 py-1 rounded text-sm ${
+            !selectedGroup && !searchName.trim()
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
           }`}
           onClick={() => {
             setSelectedGroup("");
+            setSearchName("");
           }}
         >
           Ver todo
         </button>
         <select
-          className="px-2 py-1 rounded border"
+          className="px-2 py-1 rounded border text-sm"
           value={selectedGroup}
           onChange={(e) => setSelectedGroup(e.target.value)}
         >
@@ -375,6 +387,13 @@ export default function CanvasBoard() {
             </option>
           ))}
         </select>
+        <input
+          type="text"
+          placeholder="Buscar por nombre..."
+          className="px-3 py-1 rounded border text-sm min-w-[150px]"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+        />
       </div>
       {/* Botón para agregar post */}
       {isAuthenticated && (

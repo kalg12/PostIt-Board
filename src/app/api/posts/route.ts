@@ -30,13 +30,33 @@ export async function GET(request: NextRequest) {
   try {
     const subjectId = request.nextUrl?.searchParams.get("subjectId") || "";
     const teacherId = request.nextUrl?.searchParams.get("teacherId") || "";
+    const group = request.nextUrl?.searchParams.get("group") || "";
+    const name = request.nextUrl?.searchParams.get("name") || "";
 
     const where: {
       subjectId?: string;
       teacherId?: string;
+      author?: {
+        group?: string;
+        name?: {
+          contains: string;
+        };
+      };
     } = {};
+
     if (subjectId) where.subjectId = subjectId;
     if (teacherId) where.teacherId = teacherId;
+
+    // Construir filtros de autor
+    if (group || name) {
+      where.author = {};
+      if (group) where.author.group = group;
+      if (name) {
+        where.author.name = {
+          contains: name,
+        };
+      }
+    }
 
     const posts = await prisma.post.findMany({
       where,

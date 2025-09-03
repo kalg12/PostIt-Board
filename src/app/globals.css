@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+/* Estilo simple de mural para el tablero */
+.mural-bg {
+  background: 
+    /* Base de corcho suave */ linear-gradient(
+    135deg,
+    #f5f5dc 0%,
+    #e6d3a3 50%,
+    #d2b48c 100%
+  );
+
+  /* Textura sutil de corcho */
+  background-image: radial-gradient(
+      circle at 20% 20%,
+      rgba(139, 69, 19, 0.1) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(160, 82, 45, 0.08) 0%,
+      transparent 50%
+    );
+
+  /* Borde de marco */
+  border: 6px solid #8b4513;
+  border-radius: 12px;
+
+  /* Sombra para dar profundidad */
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1), 0 8px 25px rgba(0, 0, 0, 0.15);
+}
