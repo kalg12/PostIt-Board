@@ -4,17 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserPlus, User, Mail, Lock, Users } from "lucide-react";
-
-const GROUPS = [
-  { value: "A", label: "Grupo A" },
-  { value: "B", label: "Grupo B" },
-  { value: "C", label: "Grupo C" },
-  { value: "D", label: "Grupo D" },
-  { value: "E", label: "Grupo E" },
-  { value: "F", label: "Grupo F" },
-  { value: "G", label: "Grupo G" },
-  { value: "H", label: "Grupo H" },
-];
+import { GROUPS } from "@/lib/constants";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({

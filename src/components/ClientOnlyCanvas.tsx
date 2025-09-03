@@ -26,7 +26,7 @@ export default function ClientOnlyCanvas() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">
@@ -39,7 +39,7 @@ export default function ClientOnlyCanvas() {
 
   if (!CanvasBoard) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-lg text-red-600">Error al cargar el lienzo</p>
         </div>

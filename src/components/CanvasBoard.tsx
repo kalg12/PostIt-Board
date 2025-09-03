@@ -1,17 +1,5 @@
 "use client";
 
-interface Subject {
-  id: string;
-  name: string;
-}
-
-interface Teacher {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
 interface Post {
   id: string;
   content: string;
@@ -44,49 +32,11 @@ import { usePostStore, useAuthStore } from "@/store/useStore";
 import { Plus } from "lucide-react";
 import PostItForm from "./PostItForm";
 import { findFreePosition } from "@/lib/canvas-utils";
-
-// Interfaces solo una vez, al inicio
-interface Subject {
-  id: string;
-  name: string;
-}
-
-interface Teacher {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-interface Post {
-  id: string;
-  content: string;
-  x: number;
-  y: number;
-  color: string;
-  authorId: string;
-  author: {
-    name: string;
-    group: string;
-    career: string;
-  };
-  subject?: { id: string; name: string } | null;
-  teacher?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { GROUPS } from "@/lib/constants";
 
 export default function CanvasBoard() {
   // Filtros
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
-  const [selectedTeacher, setSelectedTeacher] = useState<string>("");
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
   const { posts, setPosts, addPost, updatePost } = usePostStore();
   const { isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -113,8 +63,7 @@ export default function CanvasBoard() {
     try {
       let url = "/api/posts";
       const params = [];
-      if (selectedSubject) params.push(`subjectId=${selectedSubject}`);
-      if (selectedTeacher) params.push(`teacherId=${selectedTeacher}`);
+      if (selectedGroup) params.push(`group=${selectedGroup}`);
       if (params.length) url += `?${params.join("&")}`;
       const response = await fetch(url);
       if (response.ok) {
@@ -126,20 +75,7 @@ export default function CanvasBoard() {
     } finally {
       setIsLoading(false);
     }
-  }, [setPosts, selectedSubject, selectedTeacher]);
-  // Obtener materias y profesores para los filtros
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      const res = await fetch("/api/subjects");
-      if (res.ok) setSubjects(await res.json());
-    };
-    const fetchTeachers = async () => {
-      const res = await fetch("/api/teachers");
-      if (res.ok) setTeachers(await res.json());
-    };
-    fetchSubjects();
-    fetchTeachers();
-  }, []);
+  }, [setPosts, selectedGroup]);
 
   useEffect(() => {
     fetchPosts();
@@ -148,16 +84,52 @@ export default function CanvasBoard() {
   // Configurar tamaño del stage
   useEffect(() => {
     const updateSize = () => {
+      // Calcular el espacio disponible restando navbar y footer
+      const navbar = document.querySelector("nav");
+      const footer = document.querySelector("footer");
+
+      let navbarHeight = 0;
+      let footerHeight = 0;
+
+      if (navbar) {
+        navbarHeight = navbar.getBoundingClientRect().height;
+      }
+
+      if (footer) {
+        footerHeight = footer.getBoundingClientRect().height;
+      }
+
+      const availableHeight = window.innerHeight - navbarHeight - footerHeight;
+
       setStageSize({
         width: window.innerWidth,
-        height: window.innerHeight - 64, // Restar altura del navbar
+        height: Math.max(availableHeight, 400), // Mínimo 400px de altura
       });
     };
 
-    updateSize();
+    // Pequeño delay para asegurar que los elementos estén renderizados
+    const timeoutId = setTimeout(updateSize, 100);
     window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", updateSize);
+    };
   }, []);
+
+  // Ajustar posición inicial del viewport cuando se carga el canvas
+  useEffect(() => {
+    if (stageSize.width > 0 && stageSize.height > 0) {
+      // Centrar el viewport en el área visible
+      const centerX = (canvasWidth - stageSize.width) / 2;
+      const centerY = (canvasHeight - stageSize.height) / 2;
+
+      setViewportPosition({
+        x: Math.max(0, -centerX),
+        y: Math.max(0, -centerY),
+      });
+    }
+  }, [stageSize.width, stageSize.height]);
 
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
     // Solo mostrar formulario si el usuario está autenticado y hace clic en área vacía
@@ -199,9 +171,18 @@ export default function CanvasBoard() {
 
   const handleResetView = () => {
     setScale(1);
-    setViewportPosition({ x: 0, y: 0 });
+    // Centrar el viewport en el área visible
+    const centerX = (canvasWidth - stageSize.width) / 2;
+    const centerY = (canvasHeight - stageSize.height) / 2;
+
+    const newPosition = {
+      x: Math.max(0, -centerX),
+      y: Math.max(0, -centerY),
+    };
+
+    setViewportPosition(newPosition);
     if (stageRef.current) {
-      stageRef.current.position({ x: 0, y: 0 });
+      stageRef.current.position(newPosition);
       stageRef.current.scale({ x: 1, y: 1 });
     }
   };
@@ -369,43 +350,28 @@ export default function CanvasBoard() {
   }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
+    <div className="relative w-full flex-1 overflow-hidden">
       {/* Filtros */}
       <div className="absolute top-4 left-4 z-20 flex gap-4 bg-white/80 p-3 rounded-lg shadow-md">
         <button
           className={`px-3 py-1 rounded ${
-            !selectedSubject && !selectedTeacher
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200"
+            !selectedGroup ? "bg-blue-600 text-white" : "bg-gray-200"
           }`}
           onClick={() => {
-            setSelectedSubject("");
-            setSelectedTeacher("");
+            setSelectedGroup("");
           }}
         >
           Ver todo
         </button>
         <select
           className="px-2 py-1 rounded border"
-          value={selectedSubject}
-          onChange={(e) => setSelectedSubject(e.target.value)}
+          value={selectedGroup}
+          onChange={(e) => setSelectedGroup(e.target.value)}
         >
-          <option value="">Filtrar por materia</option>
-          {subjects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className="px-2 py-1 rounded border"
-          value={selectedTeacher}
-          onChange={(e) => setSelectedTeacher(e.target.value)}
-        >
-          <option value="">Filtrar por profesor</option>
-          {teachers.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.firstName} {t.lastName}
+          <option value="">Filtrar por grupo</option>
+          {GROUPS.map((group) => (
+            <option key={group.value} value={group.value}>
+              {group.label}
             </option>
           ))}
         </select>
@@ -417,7 +383,7 @@ export default function CanvasBoard() {
             setNewPostPosition({ x: 100, y: 100 });
             setShowForm(true);
           }}
-          className="fixed top-20 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg z-10"
+          className="fixed top-20 right-6 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white p-4 rounded-full shadow-xl z-10 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl"
         >
           <Plus className="h-6 w-6" />
         </button>

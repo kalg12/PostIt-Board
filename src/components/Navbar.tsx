@@ -15,28 +15,48 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b">
+    <nav className="bg-gradient-to-r from-blue-600 to-indigo-700 shadow-xl border-b border-blue-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between items-center py-6">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">PostIt Board</h1>
+            <Link href="/" className="flex-shrink-0 flex items-center group">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  <span className="text-white font-bold text-xl">TD</span>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-extrabold text-white">
+                    Tablero Digital
+                  </h1>
+                </div>
+              </div>
             </Link>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {isAuthenticated && user ? (
               <>
-                <div className="flex items-center space-x-2 text-gray-700">
-                  <User className="h-5 w-5" />
-                  <span className="font-medium">{user.name}</span>
-                  <span className="text-sm text-gray-500">({user.group})</span>
+                <div className="flex items-center space-x-3 bg-white/90 backdrop-blur-sm px-4 py-3 rounded-full shadow-lg border border-white/20">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-gray-800 text-sm">
+                      {user.name}
+                    </span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs text-gray-500">Grupo</span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                        {user.group}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {user.role === "ADMIN" && (
                   <Link
                     href="/admin"
-                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 shadow-lg hover:shadow-xl border border-white/30"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Admin</span>
@@ -45,23 +65,23 @@ export default function Navbar() {
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-red-500/80 backdrop-blur-sm hover:bg-red-500 transition-all duration-200 shadow-lg hover:shadow-xl border border-red-400/50"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Cerrar Sesión</span>
+                  <span>Salir</span>
                 </button>
               </>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <Link
                   href="/login"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  className="px-6 py-3 rounded-full text-sm font-semibold text-blue-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Iniciar Sesión
                 </Link>
                 <Link
                   href="/register"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  className="px-6 py-3 rounded-full text-sm font-semibold text-white bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 shadow-lg hover:shadow-xl border border-white/30"
                 >
                   Registrarse
                 </Link>
