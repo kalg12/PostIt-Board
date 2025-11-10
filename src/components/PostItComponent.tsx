@@ -55,19 +55,7 @@ export default function PostItComponent({
     }
   }, [post.x, post.y, isDragging]);
 
-  const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    const nodeType = node.getType();
-
-    // Si el target es un Text con listening activo (URLs), detener el drag
-    if (nodeType === "Text" && node.listening()) {
-      const group = node.getParent();
-      if (group && group.getType() === "Group") {
-        group.stopDrag();
-      }
-      return;
-    }
-
+  const handleDragStart = () => {
     // Permitir drag a todos los usuarios (movimiento local, no se guarda en DB)
     setIsDragging(true);
     // Notificar al padre que se está arrastrando
@@ -96,6 +84,18 @@ export default function PostItComponent({
     const newContent = prompt("Editar contenido:", post.content);
     if (newContent && newContent !== post.content) {
       onUpdate({ content: newContent });
+    }
+  };
+
+  const handleTextMouseDown = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    // Prevenir que el drag del Group se active cuando se hace clic en un enlace
+    const clickedText = e.target;
+    const isURL = clickedText.getAttr("isURL");
+    
+    if (isURL) {
+      // Detener la propagación para evitar que active el drag del Group
+      e.cancelBubble = true;
+      e.evt.stopPropagation();
     }
   };
 
@@ -202,6 +202,7 @@ export default function PostItComponent({
                 textDecoration="underline"
                 isURL={part.isURL}
                 url={part.url}
+                onMouseDown={handleTextMouseDown}
                 onClick={handleTextClick}
                 onTap={handleTextTap}
                 style="pointer"
@@ -245,6 +246,7 @@ export default function PostItComponent({
                     textDecoration={part.isURL ? "underline" : ""}
                     isURL={part.isURL}
                     url={part.url}
+                    onMouseDown={part.isURL ? handleTextMouseDown : undefined}
                     onClick={handleTextClick}
                     onTap={handleTextTap}
                     style={part.isURL ? "pointer" : "default"}
@@ -275,6 +277,7 @@ export default function PostItComponent({
                 textDecoration={part.isURL ? "underline" : ""}
                 isURL={part.isURL}
                 url={part.url}
+                onMouseDown={part.isURL ? handleTextMouseDown : undefined}
                 onClick={handleTextClick}
                 onTap={handleTextTap}
                 style={part.isURL ? "pointer" : "default"}

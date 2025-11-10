@@ -58,7 +58,7 @@ export default function CanvasBoard() {
   const minScale = 0.1;
   const maxScale = 3;
 
-  // Estado para posiciones locales
+  // Estado para posiciones locales en memoria (no persistente). Al refrescar se restauran posiciones de la DB.
   const [localPositions, setLocalPositions] = useState<{
     [id: string]: { x: number; y: number };
   }>({});
@@ -298,7 +298,7 @@ export default function CanvasBoard() {
     }
   };
 
-  // Movimiento optimista: actualiza localmente y sincroniza con backend solo al soltar
+  // Movimiento local: solo actualiza estado en memoria, NO persiste en la base de datos
   const handlePostMove = (postId: string, newPos: { x: number; y: number }) => {
     // Ajustar posición para evitar colisiones
     const allPosts = posts.map((post) => ({
@@ -317,11 +317,7 @@ export default function CanvasBoard() {
       canvasHeight
     );
 
-    setLocalPositions((prev) => {
-      const updated = { ...prev, [postId]: adjustedPos };
-      saveLocalPositions(updated);
-      return updated;
-    });
+    setLocalPositions((prev) => ({ ...prev, [postId]: adjustedPos }));
 
     // Marcar que se acaba de terminar un drag
     setIsDraggingPost(false);
@@ -368,20 +364,10 @@ export default function CanvasBoard() {
     }
   };
 
-  // Al cargar posts, limpiar posiciones locales para respetar las posiciones de la DB
+  // Reiniciar posiciones locales cuando cambia el conjunto de posts (nueva carga). No persistimos fuera de memoria.
   useEffect(() => {
-    // Limpiar posiciones locales al cargar para respetar las posiciones de la DB
-    // Las posiciones locales solo se mantienen durante la sesión actual
     setLocalPositions({});
-    localStorage.removeItem("postit-local-positions");
-  }, [posts.length]); // Solo limpiar cuando cambia el número de posts (nuevo fetch)
-
-  // Guardar posiciones locales en localStorage
-  const saveLocalPositions = (positions: {
-    [id: string]: { x: number; y: number };
-  }) => {
-    localStorage.setItem("postit-local-positions", JSON.stringify(positions));
-  };
+  }, [posts.length]);
 
   // Optimización: solo renderizar los post-its visibles y evitar re-render innecesario
   // Memoizar el mapeo de posts visibles
