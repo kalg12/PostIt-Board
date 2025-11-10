@@ -31,7 +31,7 @@ import Minimap from "./Minimap";
 import { usePostStore, useAuthStore } from "@/store/useStore";
 import { Plus } from "lucide-react";
 import PostItForm from "./PostItForm";
-import { findFreePosition } from "@/lib/canvas-utils";
+import { findFreePosition, redistributeOverlappingPosts, adjustPositionToAvoidCollision } from "@/lib/canvas-utils";
 import { GROUPS } from "@/lib/constants";
 
 export default function CanvasBoard() {
@@ -75,7 +75,15 @@ export default function CanvasBoard() {
       
       if (response.ok) {
         const data = await response.json();
-        setPosts(data);
+        // Redistribuir post-its que se superponen automáticamente
+        const redistributed = redistributeOverlappingPosts(
+          data,
+          200,
+          150,
+          canvasWidth,
+          canvasHeight
+        );
+        setPosts(redistributed);
       } else {
         console.error("Response not ok:", response.status, response.statusText);
       }
@@ -84,7 +92,7 @@ export default function CanvasBoard() {
     } finally {
       setIsLoading(false);
     }
-  }, [setPosts, selectedGroup, searchName]);
+  }, [setPosts, selectedGroup, searchName, canvasWidth, canvasHeight]);
 
   useEffect(() => {
     fetchPosts();
@@ -277,8 +285,25 @@ export default function CanvasBoard() {
 
   // Movimiento optimista: actualiza localmente y sincroniza con backend solo al soltar
   const handlePostMove = (postId: string, newPos: { x: number; y: number }) => {
+    // Ajustar posición para evitar colisiones
+    const allPosts = posts.map((post) => ({
+      id: post.id,
+      x: localPositions[post.id]?.x ?? post.x,
+      y: localPositions[post.id]?.y ?? post.y,
+    }));
+    
+    const adjustedPos = adjustPositionToAvoidCollision(
+      newPos,
+      postId,
+      allPosts,
+      200,
+      150,
+      canvasWidth,
+      canvasHeight
+    );
+    
     setLocalPositions((prev) => {
-      const updated = { ...prev, [postId]: newPos };
+      const updated = { ...prev, [postId]: adjustedPos };
       saveLocalPositions(updated);
       return updated;
     });
