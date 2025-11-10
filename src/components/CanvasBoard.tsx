@@ -63,6 +63,10 @@ export default function CanvasBoard() {
     [id: string]: { x: number; y: number };
   }>({});
 
+  // Estado para rastrear si se está arrastrando un post-it
+  const [isDraggingPost, setIsDraggingPost] = useState(false);
+  const dragEndTimeRef = useRef<number>(0);
+
   // Obtener posts con filtros
   const fetchPosts = useCallback(async () => {
     try {
@@ -155,6 +159,13 @@ export default function CanvasBoard() {
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
     // Solo mostrar formulario si el usuario está autenticado y hace clic en área vacía
     if (!isAuthenticated || e.target !== e.target.getStage()) return;
+
+    // No mostrar formulario si se acaba de arrastrar un post-it
+    // (el click se dispara después del dragEnd)
+    const timeSinceDragEnd = Date.now() - dragEndTimeRef.current;
+    if (isDraggingPost || timeSinceDragEnd < 200) {
+      return;
+    }
 
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
@@ -311,6 +322,10 @@ export default function CanvasBoard() {
       saveLocalPositions(updated);
       return updated;
     });
+
+    // Marcar que se acaba de terminar un drag
+    setIsDraggingPost(false);
+    dragEndTimeRef.current = Date.now();
   };
 
   const handlePostUpdate = async (postId: string, updates: Partial<Post>) => {
@@ -464,6 +479,7 @@ export default function CanvasBoard() {
             <PostItComponent
               key={post.id}
               post={post}
+              onDragStart={() => setIsDraggingPost(true)}
               onMove={(x: number, y: number) =>
                 handlePostMove(post.id, { x, y })
               }

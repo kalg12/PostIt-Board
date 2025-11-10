@@ -24,6 +24,7 @@ interface Post {
 
 interface PostItComponentProps {
   post: Post;
+  onDragStart?: () => void;
   onMove: (x: number, y: number) => void;
   onUpdate: (updates: Partial<Post>) => void;
   onDelete: () => void;
@@ -31,6 +32,7 @@ interface PostItComponentProps {
 
 export default function PostItComponent({
   post,
+  onDragStart,
   onMove,
   onUpdate,
   onDelete,
@@ -68,6 +70,10 @@ export default function PostItComponent({
 
     // Permitir drag a todos los usuarios (movimiento local, no se guarda en DB)
     setIsDragging(true);
+    // Notificar al padre que se está arrastrando
+    if (onDragStart) {
+      onDragStart();
+    }
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
