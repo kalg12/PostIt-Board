@@ -11,7 +11,7 @@ const resetPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { password: _password } = resetPasswordSchema.parse(body);
+    resetPasswordSchema.parse(body);
 
     // En un proyecto real, aquí buscarías el token en la base de datos
     // y verificarías que no haya expirado

@@ -31,7 +31,11 @@ import Minimap from "./Minimap";
 import { usePostStore, useAuthStore } from "@/store/useStore";
 import { Plus } from "lucide-react";
 import PostItForm from "./PostItForm";
-import { findFreePosition, redistributeOverlappingPosts, adjustPositionToAvoidCollision } from "@/lib/canvas-utils";
+import {
+  findFreePosition,
+  redistributeOverlappingPosts,
+  adjustPositionToAvoidCollision,
+} from "@/lib/canvas-utils";
 import { GROUPS } from "@/lib/constants";
 
 export default function CanvasBoard() {
@@ -68,13 +72,13 @@ export default function CanvasBoard() {
       if (searchName.trim())
         params.push(`name=${encodeURIComponent(searchName.trim())}`);
       if (params.length) url += `?${params.join("&")}`;
-      
+
       console.log("Fetching posts from:", url);
       const response = await fetch(url);
       console.log("Response status:", response.status);
-      
+
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as Post[];
         // Redistribuir post-its que se superponen automáticamente
         const redistributed = redistributeOverlappingPosts(
           data,
@@ -291,7 +295,7 @@ export default function CanvasBoard() {
       x: localPositions[post.id]?.x ?? post.x,
       y: localPositions[post.id]?.y ?? post.y,
     }));
-    
+
     const adjustedPos = adjustPositionToAvoidCollision(
       newPos,
       postId,
@@ -301,7 +305,7 @@ export default function CanvasBoard() {
       canvasWidth,
       canvasHeight
     );
-    
+
     setLocalPositions((prev) => {
       const updated = { ...prev, [postId]: adjustedPos };
       saveLocalPositions(updated);

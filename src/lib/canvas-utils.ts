@@ -51,12 +51,6 @@ export function findFreePosition(
     return { x: centerX, y: centerY };
   }
 
-  // Calcular el área ocupada para distribuir mejor
-  const minX = Math.min(...existingBounds.map(b => b.x), 0);
-  const maxX = Math.max(...existingBounds.map(b => b.x + b.width), canvasWidth);
-  const minY = Math.min(...existingBounds.map(b => b.y), 0);
-  const maxY = Math.max(...existingBounds.map(b => b.y + b.height), canvasHeight);
-
   // Buscar en múltiples puntos de inicio para distribuir mejor
   const searchPoints = [
     { x: startX, y: startY },
@@ -103,7 +97,7 @@ export function findFreePosition(
 
       // Mover en espiral con mejor algoritmo
       angle += 0.3; // Paso más pequeño para mejor cobertura
-      radius = angle * (postWidth + margin) / (2 * Math.PI); // Radio basado en el tamaño del post
+      radius = (angle * (postWidth + margin)) / (2 * Math.PI); // Radio basado en el tamaño del post
       x = searchPoint.x + radius * Math.cos(angle);
       y = searchPoint.y + radius * Math.sin(angle);
     }
@@ -112,7 +106,7 @@ export function findFreePosition(
   // Si no se encuentra posición libre, buscar en una grilla sistemática
   const stepX = postWidth + margin;
   const stepY = postHeight + margin;
-  
+
   for (let y = 0; y < canvasHeight - postHeight; y += stepY) {
     for (let x = 0; x < canvasWidth - postWidth; x += stepX) {
       const testBounds: PostBounds = {
@@ -174,8 +168,8 @@ export function adjustPositionToAvoidCollision(
   // Filtrar el post que se está moviendo
   const otherPosts = existingPosts.filter((post) => post.id !== movingPostId);
 
-  let adjustedPosition = { ...newPosition };
-  let maxIterations = 10; // Evitar loops infinitos
+  const adjustedPosition = { ...newPosition };
+  const maxIterations = 10; // Evitar loops infinitos
   let iterations = 0;
 
   while (iterations < maxIterations) {
@@ -198,7 +192,7 @@ export function adjustPositionToAvoidCollision(
 
       if (isOverlapping(newBounds, postBounds)) {
         hasCollision = true;
-        
+
         // Calcular dirección para mover el post
         const centerX1 = newBounds.x + newBounds.width / 2;
         const centerY1 = newBounds.y + newBounds.height / 2;
@@ -224,8 +218,14 @@ export function adjustPositionToAvoidCollision(
         }
 
         // Asegurar que esté dentro del canvas
-        adjustedPosition.x = Math.max(0, Math.min(adjustedPosition.x, canvasWidth - postWidth));
-        adjustedPosition.y = Math.max(0, Math.min(adjustedPosition.y, canvasHeight - postHeight));
+        adjustedPosition.x = Math.max(
+          0,
+          Math.min(adjustedPosition.x, canvasWidth - postWidth)
+        );
+        adjustedPosition.y = Math.max(
+          0,
+          Math.min(adjustedPosition.y, canvasHeight - postHeight)
+        );
         break;
       }
     }
@@ -277,13 +277,15 @@ export function detectOverlappingPosts(
 }
 
 // Redistribuir post-its que se superponen
-export function redistributeOverlappingPosts(
-  posts: Array<{ id: string; x: number; y: number }>,
+export function redistributeOverlappingPosts<
+  T extends { id: string; x: number; y: number }
+>(
+  posts: T[],
   postWidth: number = 200,
   postHeight: number = 150,
   canvasWidth: number = 4000,
   canvasHeight: number = 3000
-): Array<{ id: string; x: number; y: number }> {
+): T[] {
   const redistributed = [...posts];
   const overlaps = detectOverlappingPosts(redistributed, postWidth, postHeight);
 
@@ -293,19 +295,19 @@ export function redistributeOverlappingPosts(
 
   // Para cada post que se superpone, encontrar una nueva posición
   const processedIds = new Set<string>();
-  
+
   for (const overlap of overlaps) {
     // Procesar ambos posts si no han sido procesados
     for (const postId of [overlap.post1, overlap.post2]) {
       if (processedIds.has(postId)) continue;
-      
-      const postIndex = redistributed.findIndex(p => p.id === postId);
+
+      const postIndex = redistributed.findIndex((p) => p.id === postId);
       if (postIndex === -1) continue;
 
       const post = redistributed[postIndex];
-      
+
       // Encontrar una nueva posición libre para este post
-      const otherPosts = redistributed.filter(p => p.id !== postId);
+      const otherPosts = redistributed.filter((p) => p.id !== postId);
       const newPosition = findFreePosition(
         otherPosts,
         postWidth,
