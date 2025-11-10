@@ -353,13 +353,13 @@ export default function CanvasBoard() {
     }
   };
 
-  // Al cargar posts, cargar posiciones locales si existen
+  // Al cargar posts, limpiar posiciones locales para respetar las posiciones de la DB
   useEffect(() => {
-    const saved = localStorage.getItem("postit-local-positions");
-    if (saved) {
-      setLocalPositions(JSON.parse(saved));
-    }
-  }, []);
+    // Limpiar posiciones locales al cargar para respetar las posiciones de la DB
+    // Las posiciones locales solo se mantienen durante la sesión actual
+    setLocalPositions({});
+    localStorage.removeItem("postit-local-positions");
+  }, [posts.length]); // Solo limpiar cuando cambia el número de posts (nuevo fetch)
 
   // Guardar posiciones locales en localStorage
   const saveLocalPositions = (positions: {
@@ -457,6 +457,7 @@ export default function CanvasBoard() {
         scaleY={scale}
         x={viewportPosition.x}
         y={viewportPosition.y}
+        draggable={false}
       >
         <Layer>
           {visiblePosts.map((post) => (

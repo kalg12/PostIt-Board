@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Group, Rect, Text, Line } from "react-konva";
 import Konva from "konva";
 import { useAuthStore } from "@/store/useStore";
@@ -37,6 +37,7 @@ export default function PostItComponent({
 }: PostItComponentProps) {
   const { user } = useAuthStore();
   const [isDragging, setIsDragging] = useState(false);
+  const groupRef = useRef<Konva.Group>(null);
 
   const width = 200;
   const height = 150;
@@ -45,24 +46,41 @@ export default function PostItComponent({
   const canEdit =
     !!user && (user.id === post.authorId || user.role === "ADMIN");
 
-  const handleDragStart = () => {
-    setIsDragging(true);
-
-    // Si no puede editar, mostrar feedback visual temporal
-    if (!canEdit) {
-      // Agregar un pequeño shake effect para indicar que no se puede mover
-      setTimeout(() => {
-        // El post-it volverá a su posición original en handleDragEnd
-      }, 100);
+  // Sincronizar posición del Group cuando cambia post.x o post.y
+  useEffect(() => {
+    if (groupRef.current && !isDragging) {
+      groupRef.current.position({ x: post.x, y: post.y });
     }
+  }, [post.x, post.y, isDragging]);
+
+  const handleDragStart = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const node = e.target;
+    const nodeType = node.getType();
+
+    // Si el target es un Text con listening activo (URLs), detener el drag
+    if (nodeType === "Text" && node.listening()) {
+      const group = node.getParent();
+      if (group && group.getType() === "Group") {
+        group.stopDrag();
+      }
+      return;
+    }
+
+    // Permitir drag a todos los usuarios (movimiento local, no se guarda en DB)
+    setIsDragging(true);
   };
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     setIsDragging(false);
 
-    // Movimiento local: siempre permitir mover y guardar solo en local
-    const newX = e.target.x();
-    const newY = e.target.y();
+    const node = e.target;
+    const group = node.getType() === "Group" ? node : node.getParent();
+    if (!group || group.getType() !== "Group") return;
+
+    const newX = group.x();
+    const newY = group.y();
+
+    // Guardar la nueva posición localmente (no se guarda en DB)
     onMove(newX, newY);
   };
 
@@ -76,15 +94,38 @@ export default function PostItComponent({
   };
 
   const handleTextClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    // Solo procesar si no estamos arrastrando
-    if (isDragging) return;
+    // Detener completamente la propagación para evitar que active el drag
+    e.cancelBubble = true;
+    e.evt.stopPropagation();
+    e.evt.preventDefault();
+
+    // Detener cualquier drag en curso
+    const stage = e.target.getStage();
+    if (stage) {
+      stage.stopDrag();
+    }
 
     const clickedText = e.target;
     const isURL = clickedText.getAttr("isURL");
     const url = clickedText.getAttr("url");
 
     if (isURL && url) {
-      e.cancelBubble = true; // Prevenir que se propague el evento
+      openURL(url);
+    }
+  };
+
+  const handleTextTap = (e: Konva.KonvaEventObject<Event>) => {
+    // onTap se dispara después de que se completa el gesto
+    e.cancelBubble = true;
+    if (e.evt) {
+      e.evt.stopPropagation();
+    }
+
+    const clickedText = e.target;
+    const isURL = clickedText.getAttr("isURL");
+    const url = clickedText.getAttr("url");
+
+    if (isURL && url) {
       openURL(url);
     }
   };
@@ -156,7 +197,10 @@ export default function PostItComponent({
                 isURL={part.isURL}
                 url={part.url}
                 onClick={handleTextClick}
+                onTap={handleTextTap}
                 style="pointer"
+                listening={true}
+                draggable={false}
               />
             );
 
@@ -196,7 +240,10 @@ export default function PostItComponent({
                     isURL={part.isURL}
                     url={part.url}
                     onClick={handleTextClick}
+                    onTap={handleTextTap}
                     style={part.isURL ? "pointer" : "default"}
+                    listening={part.isURL}
+                    draggable={false}
                   />
                 );
                 currentY += lineHeight;
@@ -223,7 +270,10 @@ export default function PostItComponent({
                 isURL={part.isURL}
                 url={part.url}
                 onClick={handleTextClick}
+                onTap={handleTextTap}
                 style={part.isURL ? "pointer" : "default"}
+                listening={part.isURL}
+                draggable={false}
               />
             );
             currentY += lineHeight;
@@ -242,18 +292,18 @@ export default function PostItComponent({
 
   return (
     <Group
+      ref={groupRef}
       x={post.x}
       y={post.y}
       draggable={true}
-      dragBoundFunc={(pos) => pos} // Permite movimiento inmediato, sin delay
-      onDragMove={() => setIsDragging(true)} // Marca como arrastrando para feedback visual
+      dragBoundFunc={(pos) => pos}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDblClick={handleDoubleClick}
       onContextMenu={handleRightClick}
-      opacity={isDragging ? 0.85 : 1}
-      scaleX={isDragging ? 1.07 : 1}
-      scaleY={isDragging ? 1.07 : 1}
+      opacity={isDragging ? 0.9 : 1}
+      scaleX={isDragging ? 1.03 : 1}
+      scaleY={isDragging ? 1.03 : 1}
     >
       {/* Sombra */}
       <Rect
@@ -279,6 +329,7 @@ export default function PostItComponent({
         shadowBlur={12}
         shadowOffset={{ x: 4, y: 4 }}
         shadowOpacity={0.18}
+        listening={false}
       />
       {/* Doble de papel */}
       <Line
@@ -300,6 +351,8 @@ export default function PostItComponent({
         fontFamily="Comic Sans MS, 'Indie Flower', cursive, Arial"
         fill="#666"
         fontStyle="italic"
+        listening={false}
+        draggable={false}
       />
       {/* Carrera */}
       <Text
@@ -310,6 +363,8 @@ export default function PostItComponent({
         fontSize={9}
         fontFamily="Comic Sans MS, 'Indie Flower', cursive, Arial"
         fill="#888"
+        listening={false}
+        draggable={false}
       />
       {/* Indicador de propiedad */}
       {canEdit && (
@@ -320,6 +375,7 @@ export default function PostItComponent({
           height={10}
           fill={user?.role === "ADMIN" ? "#ef4444" : "#22c55e"}
           cornerRadius={2}
+          listening={false}
         />
       )}
     </Group>
