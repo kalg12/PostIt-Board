@@ -45,13 +45,19 @@ export default function Minimap({
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    // Convertir coordenadas del minimapa a coordenadas del canvas
+    // Convertir coordenadas del minimapa a coordenadas del canvas real
     const canvasX = clickX / scaleX;
     const canvasY = clickY / scaleY;
 
-    // Centrar el viewport en el punto clickeado (invertir la lógica)
-    const newViewportX = -(canvasX - viewportWidth / (2 * scale));
-    const newViewportY = -(canvasY - viewportHeight / (2 * scale));
+    // Calcular la posición del viewport para centrar el punto clickeado
+    // viewportX representa la esquina superior izquierda del viewport en coordenadas del canvas
+    // Para centrar el punto canvasX, necesitamos:
+    // viewportX + viewportWidth / (2 * scale) = canvasX
+    // Por lo tanto: viewportX = canvasX - viewportWidth / (2 * scale)
+    // Y como viewportX = -viewportPosition.x / scale, entonces:
+    // viewportPosition.x = -canvasX * scale + viewportWidth / 2
+    const newViewportX = -canvasX * scale + viewportWidth / 2;
+    const newViewportY = -canvasY * scale + viewportHeight / 2;
 
     onViewportChange(newViewportX, newViewportY);
   };
@@ -63,13 +69,13 @@ export default function Minimap({
     const dragX = e.clientX - rect.left;
     const dragY = e.clientY - rect.top;
 
-    // Convertir a coordenadas del canvas
+    // Convertir a coordenadas del canvas real
     const canvasX = dragX / scaleX;
     const canvasY = dragY / scaleY;
 
-    // Centrar el viewport (invertir la lógica)
-    const newViewportX = -(canvasX - viewportWidth / (2 * scale));
-    const newViewportY = -(canvasY - viewportHeight / (2 * scale));
+    // Calcular la posición del viewport para centrar el punto arrastrado
+    const newViewportX = -canvasX * scale + viewportWidth / 2;
+    const newViewportY = -canvasY * scale + viewportHeight / 2;
 
     onViewportChange(newViewportX, newViewportY);
   };
@@ -201,14 +207,28 @@ export default function Minimap({
             <div
               className="absolute border-2 border-blue-500 bg-blue-400/20 pointer-events-none rounded-sm shadow-lg"
               style={{
-                left: Math.max(0, -viewportX * scaleX),
-                top: Math.max(0, -viewportY * scaleY),
+                // viewportX y viewportY representan la posición del viewport en coordenadas del canvas
+                // Convertimos a coordenadas del minimapa multiplicando por los factores de escala
+                left: Math.max(
+                  0,
+                  Math.min(
+                    minimapWidth - (viewportWidth / scale) * scaleX,
+                    viewportX * scaleX
+                  )
+                ),
+                top: Math.max(
+                  0,
+                  Math.min(
+                    minimapHeight - (viewportHeight / scale) * scaleY,
+                    viewportY * scaleY
+                  )
+                ),
                 width: Math.min(
-                  minimapWidth - Math.max(0, -viewportX * scaleX),
+                  minimapWidth - Math.max(0, viewportX * scaleX),
                   (viewportWidth / scale) * scaleX
                 ),
                 height: Math.min(
-                  minimapHeight - Math.max(0, -viewportY * scaleY),
+                  minimapHeight - Math.max(0, viewportY * scaleY),
                   (viewportHeight / scale) * scaleY
                 ),
               }}
