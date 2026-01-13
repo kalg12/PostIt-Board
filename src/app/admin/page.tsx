@@ -59,7 +59,7 @@ interface Stats {
 }
 
 export default function AdminPage() {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, token } = useAuthStore();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState<User[]>([]);
@@ -82,7 +82,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/users", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -99,7 +99,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/stats", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -123,7 +123,7 @@ export default function AdminPage() {
       const response = await fetch(`/api/users?id=${userId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -142,7 +142,7 @@ export default function AdminPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id: userId,
@@ -174,7 +174,7 @@ export default function AdminPage() {
       const response = await fetch("/api/users/upload", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });

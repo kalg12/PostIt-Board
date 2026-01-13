@@ -10,6 +10,8 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
+    // Limpiar localStorage
+    localStorage.removeItem("token");
     // Limpiar cookies si las hay
     document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
   };
