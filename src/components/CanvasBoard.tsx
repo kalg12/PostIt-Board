@@ -44,7 +44,7 @@ export default function CanvasBoard() {
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [searchName, setSearchName] = useState<string>("");
   const { posts, setPosts, addPost, updatePost } = usePostStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, token } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [newPostPosition, setNewPostPosition] = useState({ x: 100, y: 100 });
@@ -289,7 +289,7 @@ export default function CanvasBoard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           content,
@@ -343,7 +343,7 @@ export default function CanvasBoard() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id: postId,
@@ -365,7 +365,7 @@ export default function CanvasBoard() {
       const response = await fetch(`/api/posts?id=${postId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
