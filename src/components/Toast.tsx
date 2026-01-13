@@ -11,6 +11,24 @@ interface ToastProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const colorConfig = {
+  success: {
+    bg: "bg-green-50 border-green-500",
+    title: "text-green-900",
+    description: "text-green-700",
+  },
+  error: {
+    bg: "bg-red-50 border-red-500",
+    title: "text-red-900",
+    description: "text-red-700",
+  },
+  info: {
+    bg: "bg-blue-50 border-blue-500",
+    title: "text-blue-900",
+    description: "text-blue-700",
+  },
+};
+
 export function Toast({
   title,
   description,
@@ -18,43 +36,30 @@ export function Toast({
   open,
   onOpenChange,
 }: ToastProps) {
-  const bgColor =
-    type === "success"
-      ? "bg-green-50 border-green-500"
-      : type === "error"
-      ? "bg-red-50 border-red-500"
-      : "bg-blue-50 border-blue-500";
-
-  const titleColor =
-    type === "success"
-      ? "text-green-900"
-      : type === "error"
-      ? "text-red-900"
-      : "text-blue-900";
-
-  const descriptionColor =
-    type === "success"
-      ? "text-green-700"
-      : type === "error"
-      ? "text-red-700"
-      : "text-blue-700";
+  const colors = colorConfig[type];
 
   return (
+    <ToastPrimitive.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      className={`${colors.bg} border-l-4 rounded-lg shadow-lg p-4 max-w-sm`}
+    >
+      <ToastPrimitive.Title className={`${colors.title} font-semibold mb-1`}>
+        {title}
+      </ToastPrimitive.Title>
+      {description && (
+        <ToastPrimitive.Description className={`${colors.description} text-sm`}>
+          {description}
+        </ToastPrimitive.Description>
+      )}
+    </ToastPrimitive.Root>
+  );
+}
+
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  return (
     <ToastPrimitive.Provider swipeDirection="right">
-      <ToastPrimitive.Root
-        open={open}
-        onOpenChange={onOpenChange}
-        className={`${bgColor} border-l-4 rounded-lg shadow-lg p-4 max-w-sm`}
-      >
-        <ToastPrimitive.Title className={`${titleColor} font-semibold mb-1`}>
-          {title}
-        </ToastPrimitive.Title>
-        {description && (
-          <ToastPrimitive.Description className={`${descriptionColor} text-sm`}>
-            {description}
-          </ToastPrimitive.Description>
-        )}
-      </ToastPrimitive.Root>
+      {children}
       <ToastPrimitive.Viewport className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-96 max-w-[90vw]" />
     </ToastPrimitive.Provider>
   );

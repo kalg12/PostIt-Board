@@ -37,7 +37,7 @@ import {
   adjustPositionToAvoidCollision,
 } from "@/lib/canvas-utils";
 import { GROUPS } from "@/lib/constants";
-import { Toast } from "./Toast";
+import { Toast, ToastProvider } from "./Toast";
 
 export default function CanvasBoard() {
   // Filtros
@@ -378,12 +378,17 @@ export default function CanvasBoard() {
           type: "success",
         });
       } else {
-        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = "No se pudo eliminar el post-it. Intenta de nuevo.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error("Error al parsear respuesta de error:", parseError);
+        }
         setToast({
           open: true,
           title: "Error al eliminar",
-          description:
-            errorData.error || "No se pudo eliminar el post-it. Intenta de nuevo.",
+          description: errorMessage,
           type: "error",
         });
       }
@@ -423,7 +428,8 @@ export default function CanvasBoard() {
   }
 
   return (
-    <div className="relative w-full flex-1 overflow-hidden mural-bg">
+    <ToastProvider>
+      <div className="relative w-full flex-1 overflow-hidden mural-bg">
       {/* Filtros */}
       <div className="absolute top-4 left-4 z-20 flex gap-3 bg-white/80 p-3 rounded-lg shadow-md">
         <button
@@ -541,5 +547,6 @@ export default function CanvasBoard() {
         onOpenChange={(open) => setToast((prev) => ({ ...prev, open }))}
       />
     </div>
+    </ToastProvider>
   );
 }
