@@ -37,6 +37,7 @@ import {
   adjustPositionToAvoidCollision,
 } from "@/lib/canvas-utils";
 import { GROUPS } from "@/lib/constants";
+import { Toast } from "./Toast";
 
 export default function CanvasBoard() {
   // Filtros
@@ -66,6 +67,18 @@ export default function CanvasBoard() {
   // Estado para rastrear si se está arrastrando un post-it
   const [isDraggingPost, setIsDraggingPost] = useState(false);
   const dragEndTimeRef = useRef<number>(0);
+
+  // Estado para notificaciones toast
+  const [toast, setToast] = useState<{
+    open: boolean;
+    title: string;
+    description?: string;
+    type: "success" | "error" | "info";
+  }>({
+    open: false,
+    title: "",
+    type: "info",
+  });
 
   // Obtener posts con filtros
   const fetchPosts = useCallback(async () => {
@@ -358,9 +371,30 @@ export default function CanvasBoard() {
 
       if (response.ok) {
         usePostStore.getState().removePost(postId);
+        setToast({
+          open: true,
+          title: "Post-it eliminado",
+          description: "El post-it se eliminó exitosamente",
+          type: "success",
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setToast({
+          open: true,
+          title: "Error al eliminar",
+          description:
+            errorData.error || "No se pudo eliminar el post-it. Intenta de nuevo.",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al eliminar post:", error);
+      setToast({
+        open: true,
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor. Verifica tu conexión.",
+        type: "error",
+      });
     }
   };
 
@@ -496,6 +530,15 @@ export default function CanvasBoard() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetView={handleResetView}
+      />
+
+      {/* Toast de notificaciones */}
+      <Toast
+        title={toast.title}
+        description={toast.description}
+        type={toast.type}
+        open={toast.open}
+        onOpenChange={(open) => setToast((prev) => ({ ...prev, open }))}
       />
     </div>
   );
