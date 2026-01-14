@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useStore";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, Settings, StickyNote } from "lucide-react";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -54,6 +54,14 @@ export default function Navbar() {
                     </div>
                   </div>
                 </div>
+
+                <Link
+                  href="/my-posts"
+                  className="flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-all duration-200 shadow-lg hover:shadow-xl border border-white/30"
+                >
+                  <StickyNote className="h-4 w-4" />
+                  <span>Mis Posts</span>
+                </Link>
 
                 {user.role === "ADMIN" && (
                   <Link
