@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Edit2, Trash2, Calendar, User as UserIcon } from "lucide-react";
 import { Toast, ToastProvider } from "@/components/Toast";
 
+const MAX_CONTENT_LENGTH = 500;
+
 interface Post {
   id: string;
   content: string;
@@ -60,13 +62,21 @@ export default function MyPostsPage() {
         setPosts(data);
       } else if (response.status === 401) {
         router.push("/login");
+      } else {
+        const errorData = await response.json().catch(() => ({ error: "Error desconocido" }));
+        setToast({
+          open: true,
+          title: "Error al cargar posts",
+          description: errorData.error || `Error del servidor (${response.status})`,
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al cargar posts:", error);
       setToast({
         open: true,
-        title: "Error",
-        description: "No se pudieron cargar los posts",
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor",
         type: "error",
       });
     } finally {
@@ -94,6 +104,28 @@ export default function MyPostsPage() {
   };
 
   const handleSaveEdit = async (postId: string) => {
+    // Validar contenido antes de enviar
+    const trimmedContent = editContent.trim();
+    if (!trimmedContent) {
+      setToast({
+        open: true,
+        title: "Error de validación",
+        description: "El contenido no puede estar vacío",
+        type: "error",
+      });
+      return;
+    }
+
+    if (trimmedContent.length > MAX_CONTENT_LENGTH) {
+      setToast({
+        open: true,
+        title: "Error de validación",
+        description: `El contenido no puede exceder ${MAX_CONTENT_LENGTH} caracteres`,
+        type: "error",
+      });
+      return;
+    }
+
     try {
       const response = await fetch("/api/posts", {
         method: "PUT",
@@ -103,7 +135,7 @@ export default function MyPostsPage() {
         },
         body: JSON.stringify({
           id: postId,
-          content: editContent,
+          content: trimmedContent,
         }),
       });
 
@@ -258,7 +290,7 @@ export default function MyPostsPage() {
                           onChange={(e) => setEditContent(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           rows={4}
-                          maxLength={500}
+                          maxLength={MAX_CONTENT_LENGTH}
                         />
                         <div className="flex gap-2">
                           <button
