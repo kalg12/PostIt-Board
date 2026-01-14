@@ -63,7 +63,7 @@ export default function MyPostsPage() {
       } else if (response.status === 401) {
         router.push("/login");
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Error desconocido" }));
+        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al cargar posts",
@@ -153,7 +153,7 @@ export default function MyPostsPage() {
           type: "success",
         });
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al actualizar",
@@ -196,7 +196,7 @@ export default function MyPostsPage() {
           type: "success",
         });
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al eliminar",
