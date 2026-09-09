@@ -60,8 +60,8 @@ export const useAuthStore = create<AuthStore>()(
     {
       name: "auth-storage",
       onRehydrateStorage: () => (state) => state?.setHasHydrated(true),
-    }
-  )
+    },
+  ),
 );
 
 export const usePostStore = create<PostStore>((set) => ({
@@ -71,7 +71,7 @@ export const usePostStore = create<PostStore>((set) => ({
   updatePost: (id, updates) =>
     set((state) => ({
       posts: state.posts.map((post) =>
-        post.id === id ? { ...post, ...updates } : post
+        post.id === id ? { ...post, ...updates } : post,
       ),
     })),
   removePost: (id) =>
