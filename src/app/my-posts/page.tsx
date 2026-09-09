@@ -32,7 +32,7 @@ interface Post {
 }
 
 export default function MyPostsPage() {
-  const { user, isAuthenticated, token } = useAuthStore();
+  const { user, isAuthenticated, token, hasHydrated } = useAuthStore();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,13 +92,17 @@ export default function MyPostsPage() {
   }, [token, router]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!hasHydrated) {
+      return;
+    }
+
+    if (!isAuthenticated || !token) {
       router.push("/login");
       return;
     }
 
     fetchMyPosts();
-  }, [isAuthenticated, router, fetchMyPosts]);
+  }, [hasHydrated, isAuthenticated, token, router, fetchMyPosts]);
 
   const handleEdit = (post: Post) => {
     setEditingPost(post.id);
