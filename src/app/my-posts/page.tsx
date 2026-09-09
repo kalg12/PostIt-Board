@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "@/store/useStore";
 import { useRouter } from "next/navigation";
-import { Edit2, Trash2, Calendar, User as UserIcon } from "lucide-react";
+import { Edit2, Trash2, Calendar, User as UserIcon, Check } from "lucide-react";
 import { Toast, ToastProvider } from "@/components/Toast";
 
 const MAX_CONTENT_LENGTH = 500;
@@ -38,6 +38,10 @@ export default function MyPostsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingPost, setEditingPost] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [selectedPostIds, setSelectedPostIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{
     open: boolean;
     title: string;
@@ -63,11 +67,14 @@ export default function MyPostsPage() {
       } else if (response.status === 401) {
         router.push("/login");
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al cargar posts",
-          description: errorData.error || `Error del servidor (${response.status})`,
+          description:
+            errorData.error || `Error del servidor (${response.status})`,
           type: "error",
         });
       }
@@ -142,7 +149,7 @@ export default function MyPostsPage() {
       if (response.ok) {
         const updatedPost = await response.json();
         setPosts(
-          posts.map((post) => (post.id === postId ? updatedPost : post))
+          posts.map((post) => (post.id === postId ? updatedPost : post)),
         );
         setEditingPost(null);
         setEditContent("");
@@ -153,7 +160,9 @@ export default function MyPostsPage() {
           type: "success",
         });
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al actualizar",
@@ -173,9 +182,7 @@ export default function MyPostsPage() {
   };
 
   const handleDelete = async (postId: string) => {
-    if (
-      !confirm("¿Estás seguro de que quieres eliminar este post-it?")
-    ) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este post-it?")) {
       return;
     }
 
@@ -188,7 +195,14 @@ export default function MyPostsPage() {
       });
 
       if (response.ok) {
-        setPosts(posts.filter((post) => post.id !== postId));
+        setPosts((currentPosts) =>
+          currentPosts.filter((post) => post.id !== postId),
+        );
+        setSelectedPostIds((currentIds) => {
+          const nextIds = new Set(currentIds);
+          nextIds.delete(postId);
+          return nextIds;
+        });
         setToast({
           open: true,
           title: "Post eliminado",
@@ -196,7 +210,9 @@ export default function MyPostsPage() {
           type: "success",
         });
       } else {
-        const errorData = await response.json().catch(() => ({ error: "Error de comunicación con el servidor" }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Error de comunicación con el servidor" }));
         setToast({
           open: true,
           title: "Error al eliminar",
@@ -212,6 +228,84 @@ export default function MyPostsPage() {
         description: "No se pudo conectar con el servidor",
         type: "error",
       });
+    }
+  };
+
+  const togglePostSelection = (postId: string) => {
+    setSelectedPostIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextIds.has(postId)) {
+        nextIds.delete(postId);
+      } else {
+        nextIds.add(postId);
+      }
+      return nextIds;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedPostIds((currentIds) =>
+      currentIds.size === posts.length
+        ? new Set()
+        : new Set(posts.map((post) => post.id)),
+    );
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = Array.from(selectedPostIds);
+    const idsToDelete = new Set(ids);
+    if (
+      ids.length === 0 ||
+      !confirm(
+        `¿Estás seguro de que quieres eliminar ${ids.length} post${ids.length !== 1 ? "s" : "-it"}?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch("/api/posts", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (response.ok) {
+        setPosts((currentPosts) =>
+          currentPosts.filter((post) => !idsToDelete.has(post.id)),
+        );
+        setSelectedPostIds(new Set());
+        setToast({
+          open: true,
+          title: "Posts eliminados",
+          description: `Se eliminaron ${ids.length} post${ids.length !== 1 ? "s" : "-it"} exitosamente`,
+          type: "success",
+        });
+      } else {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Error de comunicación con el servidor" }));
+        setToast({
+          open: true,
+          title: "Error al eliminar",
+          description: errorData.error || "No se pudieron eliminar los posts",
+          type: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error al eliminar posts:", error);
+      setToast({
+        open: true,
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor",
+        type: "error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -249,9 +343,42 @@ export default function MyPostsPage() {
             </p>
             <div className="mt-4 bg-white/80 rounded-lg px-4 py-2 inline-block">
               <p className="text-sm text-gray-700">
-                Total: <span className="font-bold text-blue-600">{posts.length}</span> post{posts.length !== 1 ? "s" : ""}
+                Total:{" "}
+                <span className="font-bold text-blue-600">{posts.length}</span>{" "}
+                post{posts.length !== 1 ? "s" : ""}
               </p>
             </div>
+            {posts.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-50 transition-colors"
+                >
+                  <span
+                    className={`flex h-5 w-5 items-center justify-center rounded border ${selectedPostIds.size === posts.length ? "border-blue-600 bg-blue-600 text-white" : "border-gray-400"}`}
+                  >
+                    {selectedPostIds.size === posts.length && (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </span>
+                  {selectedPostIds.size === posts.length
+                    ? "Deseleccionar todos"
+                    : "Seleccionar todos"}
+                </button>
+                {selectedPostIds.size > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={isDeleting}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isDeleting
+                      ? "Eliminando..."
+                      : `Eliminar seleccionados (${selectedPostIds.size})`}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {posts.length === 0 ? (
@@ -283,6 +410,22 @@ export default function MyPostsPage() {
                   style={{ borderTop: `4px solid ${post.color}` }}
                 >
                   <div className="p-6">
+                    <label className="mb-4 flex w-fit cursor-pointer items-center gap-2 text-sm font-medium text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={selectedPostIds.has(post.id)}
+                        onChange={() => togglePostSelection(post.id)}
+                        className="sr-only"
+                      />
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded border ${selectedPostIds.has(post.id) ? "border-blue-600 bg-blue-600 text-white" : "border-gray-400 bg-white"}`}
+                      >
+                        {selectedPostIds.has(post.id) && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </span>
+                      Seleccionar
+                    </label>
                     {editingPost === post.id ? (
                       <div className="space-y-4">
                         <textarea
